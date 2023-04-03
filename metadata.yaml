@@ -1,0 +1,23 @@
+name: flask-k8s
+
+display-name: Flask
+
+summary: Turn any Flask application into a charm.
+
+description: Flask charm can turn any Flask application into a charm.
+
+docs: ""
+
+issues: https://github.com/canonical/flask-k8s-operator/issues
+
+maintainers:
+  - launchpad.net/~canonical-is-devops
+
+containers:
+  flask-app:
+    resource: flask-app-image
+
+resources:
+  flask-app-image:
+    type: oci-image
+    description: Flask application image.
