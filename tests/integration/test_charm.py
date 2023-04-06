@@ -8,29 +8,37 @@ import asyncio
 import logging
 
 import pytest
-from pytest import Config
+import pytest_asyncio
+import requests
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
+APP_NAME = "flask-k8s"
 
-@pytest.mark.abort_on_fail
-async def test_build_and_deploy(ops_test: OpsTest, pytestconfig: Config):
-    """
-    arrange: none.
-    act: build the charm-under-test and deploy it together with related charms.
-    assert: on the unit status before any relations/configurations take place.
-    """
+
+@pytest_asyncio.fixture
+async def build_and_deploy(ops_test: OpsTest, pytestconfig: pytest.Config):
+    """Build and deploy the flask charm."""
     assert ops_test.model
-    # Build and deploy charm from local source folder
     charm = await ops_test.build_charm(".")
     resources = {"flask-app-image": pytestconfig.getoption("--flask-app-image")}
-
-    # Deploy the charm and wait for idle
-    app_name = "flask-k8s"
     await asyncio.gather(
         ops_test.model.deploy(
-            charm, resources=resources, application_name=app_name, series="jammy"
+            charm, resources=resources, application_name=APP_NAME, series="jammy"
         ),
-        ops_test.model.wait_for_idle(apps=[app_name], raise_on_blocked=True, timeout=1000),
+        ops_test.model.wait_for_idle(apps=[APP_NAME], raise_on_blocked=True),
     )
+
+
+@pytest.mark.usefixtures("build_and_deploy")
+async def test_flask_is_up(get_unit_ips):
+    """
+    arrange: build and deploy the flask charm.
+    act: send a request to the flask application managed by the flask charm.
+    assert: the flask application should return a correct response.
+    """
+    for unit_ip in await get_unit_ips(APP_NAME):
+        response = requests.get(f"http://{unit_ip}:8080", timeout=5)
+        assert response.status_code == 200
+        assert "Hello, World!" in response.text

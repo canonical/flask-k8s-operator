@@ -1,0 +1,32 @@
+name: flask-app
+summary: A flask sample app
+description: OCI image for the sample flask app
+version: "0.1"
+base: bare
+build-base: ubuntu:22.04
+license: Apache-2.0
+platforms:
+  amd64:
+
+parts:
+  flask-user:
+    plugin: nil
+    overlay-script: |
+      mkdir $CRAFT_OVERLAY/etc
+      chmod 755 $CRAFT_OVERLAY/etc
+      groupadd -R $CRAFT_OVERLAY --gid 2000 flask
+      useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --home /srv/flask flask
+  flask-dependencies:
+    plugin: nil
+    stage-packages:
+      - bash
+      - coreutils
+      - python3-flask
+      - python3-gunicorn
+  flask-app:
+    plugin: dump
+    source: .
+    organize:
+      sample-app: srv/flask
+    prime:
+      - srv/flask
