@@ -1,0 +1,3 @@
+# ignore pebble CVEs until https://github.com/canonical/pebble/pull/194 is merged
+CVE-2021-43565
+CVE-2022-27191
