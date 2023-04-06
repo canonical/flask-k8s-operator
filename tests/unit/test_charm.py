@@ -6,7 +6,7 @@
 from ops.testing import Harness
 
 
-def test_flask_gpgpebble_layer(harness: Harness) -> None:
+def test_flask_pebble_layer(harness: Harness) -> None:
     """
     arrange: none
     act: start the flask charm and set flask-app container to be ready.
