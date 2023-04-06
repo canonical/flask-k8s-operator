@@ -18,11 +18,10 @@ parts:
       useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --home /srv/flask flask
   flask-dependencies:
     plugin: nil
-    stage-packages:
-      - bash
-      - coreutils
-      - python3-flask
-      - python3-gunicorn
+    build-packages:
+      - python3-pip
+    overlay-script: |
+      pip install flask gunicorn
   flask-app:
     plugin: dump
     source: .
