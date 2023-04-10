@@ -30,6 +30,6 @@ parts:
     plugin: dump
     source: .
     organize:
-      sample-app: srv/flask/app
+      sample-app: srv/flask
     prime:
-      - srv/flask/app
+      - srv/flask
