@@ -9,11 +9,13 @@ platforms:
   amd64:
 
 parts:
-  flask-user:
+  flask-environment:
     plugin: nil
     overlay-script: |
       mkdir $CRAFT_OVERLAY/etc
+      mkdir $CRAFT_OVERLAY/tmp
       chmod 755 $CRAFT_OVERLAY/etc
+      chmod 777 $CRAFT_OVERLAY/tmp
       groupadd -R $CRAFT_OVERLAY --gid 2000 flask
       useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --home /srv/flask flask
   flask-dependencies:
@@ -30,6 +32,6 @@ parts:
     plugin: dump
     source: .
     organize:
-      sample-app: srv/flask
+      sample-app: srv/flask/app
     prime:
-      - srv/flask
+      - srv/flask/app
