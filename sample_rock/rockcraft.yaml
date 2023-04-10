@@ -26,8 +26,8 @@ parts:
       - python3-pip
     plugin: nil
     overlay-script: |
-      mkdir -p $CRAFT_OVERLAY/usr/lib/python3/dist-packages
-      pip install flask gunicorn --target $CRAFT_OVERLAY/usr/lib/python3/dist-packages
+      mkdir -p $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
+      pip install flask gunicorn --target $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
   flask-app:
     plugin: dump
     source: .
