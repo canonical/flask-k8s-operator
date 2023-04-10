@@ -17,15 +17,19 @@ parts:
       groupadd -R $CRAFT_OVERLAY --gid 2000 flask
       useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --home /srv/flask flask
   flask-dependencies:
-    plugin: nil
+    stage-packages:
+      - python3-dev
     build-packages:
+      - build-essential
       - python3-pip
+    plugin: nil
     overlay-script: |
-      pip install flask gunicorn
+      mkdir -p $CRAFT_OVERLAY/usr/lib/python3/dist-packages
+      pip install flask gunicorn --target $CRAFT_OVERLAY/usr/lib/python3/dist-packages
   flask-app:
     plugin: dump
     source: .
     organize:
-      sample-app: srv/flask
+      sample-app: srv/flask/app
     prime:
-      - srv/flask
+      - srv/flask/app
