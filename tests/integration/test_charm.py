@@ -39,6 +39,6 @@ async def test_flask_is_up(get_unit_ips):
     assert: the flask application should return a correct response.
     """
     for unit_ip in await get_unit_ips(APP_NAME):
-        response = requests.get(f"http://{unit_ip}:8080", timeout=5)
+        response = requests.get(f"http://{unit_ip}:8000", timeout=5)
         assert response.status_code == 200
         assert "Hello, World!" in response.text

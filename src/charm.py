@@ -51,7 +51,7 @@ class FlaskCharm(CharmBase):
                 "flask-app": {
                     "override": "replace",
                     "summary": "Flask application service",
-                    "command": "python3 -m gunicorn --chdir /srv/flask/app app:app -b 0.0.0.0:8080",
+                    "command": "python3 -m gunicorn --chdir /srv/flask/app app:app -b 0.0.0.0:8000",
                     "user": "flask",
                     "group": "flask",
                     "startup": "enabled",
