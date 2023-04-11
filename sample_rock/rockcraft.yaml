@@ -21,14 +21,9 @@ parts:
   flask-dependencies:
     stage-packages:
       - python3-dev
-    build-packages:
-      - build-essential
-      - python3-pip
+      - python3-flask
+      - python3-gunicorn
     plugin: nil
-    overlay-script: |
-      mkdir -p $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
-      pip install flask gunicorn --target $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
-      chown 2000:2000 -R $CRAFT_OVERLAY/srv/flask/
   flask-app:
     plugin: dump
     source: .
