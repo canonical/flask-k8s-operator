@@ -1,3 +1,9 @@
+# ignore CVEs in python3-flask and python3-gunicorn
+CVE-2021-42771
+CVE-2022-29361
+CVE-2022-40897
+CVE-2023-25577
+
 # ignore pebble CVEs until https://github.com/canonical/pebble/pull/194 is merged
 CVE-2021-43565
 CVE-2022-27191
