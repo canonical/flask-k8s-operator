@@ -15,8 +15,6 @@ from pytest_operator.plugin import OpsTest
 logger = logging.getLogger(__name__)
 
 
-
-
 @pytest_asyncio.fixture(scope="module", name="flask_app")
 async def flask_app_fixture(ops_test: OpsTest, pytestconfig: pytest.Config):
     """Build and deploy the flask charm."""
