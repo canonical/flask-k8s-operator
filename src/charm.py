@@ -33,12 +33,12 @@ class FlaskCharm(CharmBase):
             event: the config-changed event that trigger this callback function.
         """
         container = self.unit.get_container("flask-app")
-        if container.can_connect():
-            container.add_layer("flask-app", self.flask_layer(), combine=True)
-            container.replan()
-            self.unit.status = ActiveStatus()
-        else:
+        if not container.can_connect():
             event.defer()
+            return
+        container.add_layer("flask-app", self.flask_layer(), combine=True)
+        container.replan()
+        self.unit.status = ActiveStatus()
 
     def flask_layer(self) -> dict:
         """Generate the pebble layer definition for flask application.
