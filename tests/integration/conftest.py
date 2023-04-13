@@ -22,9 +22,9 @@ async def fixture_get_unit_ips(ops_test: OpsTest):
         _, status, _ = await ops_test.juju("status", "--format", "json")
         status = json.loads(status)
         units = status["applications"][application_name]["units"]
-        ip_list = []
-        for key in sorted(units.keys(), key=lambda n: int(n.split("/")[-1])):
-            ip_list.append(units[key]["address"])
-        return ip_list
+        return (
+            unit_status["address"]
+            for _, unit_status in sorted(units.items(), key=lambda kv: int(kv[0].split("/")[-1]))
+        )
 
     yield _get_unit_ips
