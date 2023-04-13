@@ -1,1 +1,15 @@
-options: {}
+options:
+  webserver_workers:
+    type: int
+    description: The number of gunicorn worker processes for handling requests.
+  webserver_threads:
+    type: int
+    description: >
+      The number of worker threads for handling requests. Run each gunicorn worker with the specified number of threads.
+  webserver_keepalive:
+    type: int
+    description: The number of seconds for gunicorn to wait for requests on a Keep-Alive connection.
+  webserver_timeout:
+    type: int
+    description: Gunicorn workers silent for more than this many seconds are killed and restarted.
+

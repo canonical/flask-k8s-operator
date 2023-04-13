@@ -4,34 +4,19 @@
 
 """Integration tests for Flask charm."""
 
-import asyncio
 import logging
+import typing
 
 import pytest
-import pytest_asyncio
 import requests
-from pytest_operator.plugin import OpsTest
+from juju.application import Application
 
 logger = logging.getLogger(__name__)
 
 
-@pytest_asyncio.fixture(scope="module", name="flask_app")
-async def flask_app_fixture(ops_test: OpsTest, pytestconfig: pytest.Config):
-    """Build and deploy the flask charm."""
-    assert ops_test.model
-    app_name = "flask-k8s"
-    charm = await ops_test.build_charm(".")
-    resources = {"flask-app-image": pytestconfig.getoption("--flask-app-image")}
-    deploy_result = await asyncio.gather(
-        ops_test.model.deploy(
-            charm, resources=resources, application_name=app_name, series="jammy"
-        ),
-        ops_test.model.wait_for_idle(apps=[app_name], raise_on_blocked=True),
-    )
-    return deploy_result[0]
-
-
-async def test_flask_is_up(flask_app, get_unit_ips):
+async def test_flask_is_up(
+    flask_app: Application, get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]]
+):
     """
     arrange: build and deploy the flask charm.
     act: send a request to the flask application managed by the flask charm.
@@ -41,3 +26,19 @@ async def test_flask_is_up(flask_app, get_unit_ips):
         response = requests.get(f"http://{unit_ip}:8000", timeout=5)
         assert response.status_code == 200
         assert "Hello, World!" in response.text
+
+
+@pytest.mark.parametrize("update_config", [{"webserver_timeout": 7}], indirect=True)
+@pytest.mark.usefixtures("update_config")
+async def test_flask_webserver_config(
+    flask_app: Application, get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]]
+):
+    """
+    arrange: build and deploy the flask charm, and change the gunicorn timeout configuration.
+    act: send long-running requests to the flask application managed by the flask charm.
+    assert: the gunicorn should restart the worker if the request duration exceeds the timeout.
+    """
+    for unit_ip in await get_unit_ips(flask_app.name):
+        assert requests.get(f"http://{unit_ip}:8000/sleep?duration=6", timeout=10).ok
+        with pytest.raises(requests.ConnectionError):
+            requests.get(f"http://{unit_ip}:8000/sleep?duration=8", timeout=10)
