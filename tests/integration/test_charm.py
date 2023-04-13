@@ -10,6 +10,8 @@ import typing
 import pytest
 import requests
 from juju.application import Application
+import pytest_asyncio
+from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
 
