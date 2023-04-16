@@ -61,10 +61,11 @@ class FlaskCharm(CharmBase):
         if not container.can_connect():
             event.defer()
             return
+
         service_name = "flask-app"
+        container.add_layer("flask-app", self.flask_layer(), combine=True)
         webserver_config_path = str(self._webserver.config_path)
         current_webserver_config = self.pull_file(webserver_config_path)
-        container.add_layer("flask-app", self.flask_layer(), combine=True)
         is_webserver_running = container.get_service(service_name).is_running()
         if current_webserver_config != self._webserver.config:
             self.push_file(webserver_config_path, self._webserver.config)
