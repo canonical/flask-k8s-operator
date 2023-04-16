@@ -5,13 +5,15 @@
 """Flask Charm service."""
 
 import logging
-import signal
 import typing
 
 from ops.charm import CharmBase, ConfigChangedEvent
 from ops.main import main
 from ops.model import ActiveStatus, Container
 from ops.pebble import PathError
+
+from charm_state import CharmState
+from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,8 @@ class FlaskCharm(CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
+        self._charm_state = CharmState(charm=self)
+        self._webserver = GunicornWebserver(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self.config_service)
 
     def flask_container(self, require_connected: bool = True) -> Container:
@@ -58,15 +62,15 @@ class FlaskCharm(CharmBase):
             event.defer()
             return
         service_name = "flask-app"
-        gunicorn_config_path = "/srv/flask/gunicorn.conf.py"
-        current_gunicorn_config = self.pull_file(gunicorn_config_path)
-        gunicorn_config = self.gunicorn_config()
-        self.push_file(gunicorn_config_path, gunicorn_config)
+        webserver_config_path = str(self._webserver.config_path)
+        current_webserver_config = self.pull_file(webserver_config_path)
         container.add_layer("flask-app", self.flask_layer(), combine=True)
-        current_running = container.get_service(service_name).is_running()
-        if current_gunicorn_config != gunicorn_config and current_running:
-            logger.info("gunicorn config changed, reloading")
-            container.send_signal(signal.SIGHUP, service_name)
+        is_webserver_running = container.get_service(service_name).is_running()
+        if current_webserver_config != self._webserver.config:
+            self.push_file(webserver_config_path, self._webserver.config)
+            if is_webserver_running:
+                logger.info("gunicorn config changed, reloading")
+                container.send_signal(self._webserver.reload_signal, service_name)
         container.replan()
         self.unit.status = ActiveStatus()
 
@@ -97,20 +101,6 @@ class FlaskCharm(CharmBase):
         except PathError:
             return None
 
-    def gunicorn_config(self) -> str:
-        """Generate the content of the gunicorn configuration file based on charm configurations.
-
-        Returns:
-            The content of the gunicorn configuration file.
-        """
-        config_entries = ["bind = ['0.0.0.0:8000']", "chdir = '/srv/flask/app'"]
-        settings = ("workers", "threads", "keepalive", "timeout")
-        for setting in settings:
-            config_name = f"webserver_{setting}"
-            if self.config.get(config_name) is not None:
-                config_entries.append(f"{setting} = {self.config.get(config_name)}")
-        return "\n".join(config_entries)
-
     def flask_layer(self) -> dict:
         """Generate the pebble layer definition for flask application.
 
@@ -122,7 +112,7 @@ class FlaskCharm(CharmBase):
                 "flask-app": {
                     "override": "replace",
                     "summary": "Flask application service",
-                    "command": "python3 -m gunicorn -c /srv/flask/gunicorn.conf.py app:app",
+                    "command": self._webserver.command,
                     "user": "flask",
                     "group": "flask",
                     "startup": "enabled",
