@@ -38,3 +38,8 @@ parts:
       sample-app: srv/flask/app
     prime:
       - srv/flask/app
+    permissions:
+      - owner: 2000
+        group: 2000
+      - path: srv/flask/
+        mode: 755
