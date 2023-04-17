@@ -7,8 +7,6 @@ import datetime
 import pathlib
 import typing
 
-from ops.charm import CharmBase
-
 
 class WebserverConfig(typing.NamedTuple):
     """Represents the configuration values for a web server.
@@ -29,19 +27,15 @@ class WebserverConfig(typing.NamedTuple):
 
 
 class CharmState:
-    """Represents the state of the Flask charm.
+    """Represents the state of the Flask charm."""
 
-    Attrs:
-        charm: The flask charm instance.
-    """
-
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm_config: typing.Mapping[str, str]):
         """Initialize a new instance of the CharmState class.
 
         Args:
-            charm: The charm instance to associate with this state.
+            charm_config: Charm configurations of the charm instance associated with this state.
         """
-        self.charm = charm
+        self._charm_config = charm_config
 
     @property
     def webserver_config(self) -> WebserverConfig:
@@ -50,10 +44,10 @@ class CharmState:
         Returns:
             The web server configuration file content for the charm.
         """
-        keepalive = self.charm.config.get("webserver_keepalive")
-        timeout = self.charm.config.get("webserver_timeout")
-        workers = self.charm.config.get("webserver_workers")
-        threads = self.charm.config.get("webserver_threads")
+        keepalive = self._charm_config.get("webserver_keepalive")
+        timeout = self._charm_config.get("webserver_timeout")
+        workers = self._charm_config.get("webserver_workers")
+        threads = self._charm_config.get("webserver_threads")
         return WebserverConfig(
             workers=int(workers) if workers is not None else None,
             threads=int(threads) if threads is not None else None,

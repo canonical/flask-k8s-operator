@@ -28,7 +28,7 @@ class FlaskCharm(CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self._charm_state = CharmState(charm=self)
+        self._charm_state = CharmState(charm_config=self.config)
         self._webserver = GunicornWebserver(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self.config_service)
 
@@ -37,13 +37,13 @@ class FlaskCharm(CharmBase):
 
         Args:
             require_connected: if set to ``True``, a runtime exception will be raised if the
-                pebble inside the container is not ready.
+                pebble service inside the container is not ready.
 
         Return:
             The controller of the flask application workload container.
 
         Raises:
-            RuntimeError: if the pebble inside  the container is not ready while the
+            RuntimeError: if the pebble service inside the container is not ready while the
                 ``require_connected`` is set to True.
         """
         container = self.unit.get_container("flask-app")
