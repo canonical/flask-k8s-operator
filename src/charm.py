@@ -82,7 +82,7 @@ class FlaskCharm(CharmBase):
             logger.error(
                 "webserver configuration check failed, stdout: %s, stderr: %s",
                 config_check_result.stdout,
-                config_check_result.stderr
+                config_check_result.stderr,
             )
             self.unit.status = BlockedStatus(
                 "Webserver configuration check failed, please review your charm configuration"
