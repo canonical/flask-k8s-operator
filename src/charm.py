@@ -5,14 +5,17 @@
 """Flask Charm service."""
 
 import logging
+import shlex
 import typing
 
+import ops.pebble
 from ops.charm import CharmBase, ConfigChangedEvent
 from ops.main import main
-from ops.model import ActiveStatus, Container
-from ops.pebble import PathError
+from ops.model import ActiveStatus, BlockedStatus, Container
+from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
+from charm_types import ExecResult
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -34,7 +37,7 @@ class FlaskCharm(CharmBase):
         self._webserver = GunicornWebserver(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
-    def flask_container_can_connect(self):
+    def container_can_connect(self) -> bool:
         """Check if the Flask pebble service is connectable.
 
         Returns:
@@ -42,7 +45,7 @@ class FlaskCharm(CharmBase):
         """
         return self.unit.get_container(self._FLASK_CONTAINER_NAME).can_connect()
 
-    def flask_container(self) -> Container:
+    def container(self) -> Container:
         """Get the flask application workload container controller.
 
         Return:
@@ -52,7 +55,7 @@ class FlaskCharm(CharmBase):
             RuntimeError: if the pebble service inside the container is not ready while the
                 ``require_connected`` is set to True.
         """
-        if not self.flask_container_can_connect():
+        if not self.container_can_connect():
             raise RuntimeError("pebble inside flask-app container is not ready")
 
         container = self.unit.get_container(self._FLASK_CONTAINER_NAME)
@@ -64,22 +67,26 @@ class FlaskCharm(CharmBase):
         Args:
             event: the config-changed event that trigger this callback function.
         """
-        if not self.flask_container_can_connect():
+        if not self.container_can_connect():
             event.defer()
             return
 
-        container = self.flask_container()
+        container = self.container()
 
         service_name = "flask-app"
         container.add_layer("flask-app", self.flask_layer(), combine=True)
         webserver_config_path = str(self._webserver.config_path)
         current_webserver_config = self.pull_file(webserver_config_path)
         is_webserver_running = container.get_service(service_name).is_running()
-        if current_webserver_config != self._webserver.config:
-            self.push_file(webserver_config_path, self._webserver.config)
-            if is_webserver_running:
-                logger.info("gunicorn config changed, reloading")
-                container.send_signal(self._webserver.reload_signal, service_name)
+        self.push_file(webserver_config_path, self._webserver.config)
+        if self.exec(self._webserver.check_config_command).exit_code:
+            self.unit.status = BlockedStatus(
+                "Webserver configuration check failed, please review your charm configuration"
+            )
+            return
+        if current_webserver_config != self._webserver.config and is_webserver_running:
+            logger.info("gunicorn config changed, reloading")
+            container.send_signal(self._webserver.reload_signal, service_name)
         container.replan()
         self.unit.status = ActiveStatus()
 
@@ -93,7 +100,7 @@ class FlaskCharm(CharmBase):
             path: Path to the file in the workload container.
             content: the text content to be written to the file.
         """
-        self.flask_container().push(path, content, encoding="utf-8")
+        self.container().push(path, content, encoding="utf-8")
 
     def pull_file(self, path: str) -> str | None:
         """Retrieve the content of the given file from the flask workload container.
@@ -106,9 +113,28 @@ class FlaskCharm(CharmBase):
             doesn't exist.
         """
         try:
-            return typing.cast(str, self.flask_container().pull(path).read())
+            return typing.cast(str, self.container().pull(path).read())
         except PathError:
             return None
+
+    def exec(self, command: list[str]) -> ExecResult:
+        """Execute a command inside the Flask workload container.
+
+        Args:
+            command: A list of strings representing the command to be executed.
+
+        Returns:
+            ExecResult: An `ExecResult` object representing the result of the command execution.
+        """
+        container = self.container()
+        exec_process: ops.pebble.ExecProcess = container.exec(command)
+        try:
+            stdout, stderr = exec_process.wait_output()
+            return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
+        except ExecError as exc:
+            return ExecResult(
+                exc.exit_code, typing.cast(str, exc.stdout), typing.cast(str, exc.stderr)
+            )
 
     def flask_layer(self) -> dict:
         """Generate the pebble layer definition for flask application.
@@ -121,7 +147,7 @@ class FlaskCharm(CharmBase):
                 "flask-app": {
                     "override": "replace",
                     "summary": "Flask application service",
-                    "command": self._webserver.command,
+                    "command": shlex.join(self._webserver.command),
                     "user": "flask",
                     "group": "flask",
                     "startup": "enabled",

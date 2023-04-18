@@ -53,13 +53,29 @@ class GunicornWebserver:
         return self._charm_state.base_dir / "gunicorn.conf.py"
 
     @property
-    def command(self):
+    def command(self) -> list[str]:
         """Get the command to start the Gunicorn web server.
 
         Returns:
             The command to start the Gunicorn web server.
         """
-        return f"python3 -m gunicorn -c {self.config_path} {self._charm_state.flask_wsgi_app_path}"
+        return [
+            "python3",
+            "-m",
+            "gunicorn",
+            "-c",
+            str(self.config_path),
+            self._charm_state.flask_wsgi_app_path,
+        ]
+
+    @property
+    def check_config_command(self) -> list[str]:
+        """Returns the command to check the Gunicorn configuration.
+
+        Returns:
+            The command to check the Gunicorn configuration.
+        """
+        return self.command + ["--check-config"]
 
     @property
     def reload_signal(self) -> signal.Signals:

@@ -11,6 +11,7 @@ import ops.testing
 import pytest
 
 from charm import FlaskCharm
+from charm_types import ExecResult
 
 
 @pytest.fixture(name="harness")
@@ -35,3 +36,9 @@ def mock_container_fs(monkeypatch) -> dict[str, str]:
     monkeypatch.setattr(FlaskCharm, "push_file", mock_fs.__setitem__)
     monkeypatch.setattr(FlaskCharm, "pull_file", mock_fs.get)
     return mock_fs
+
+
+@pytest.fixture
+def mock_container_exec(monkeypatch):
+    """Patch the exec method of the charm."""
+    monkeypatch.setattr(FlaskCharm, "exec", lambda *_: ExecResult(0, "", ""))

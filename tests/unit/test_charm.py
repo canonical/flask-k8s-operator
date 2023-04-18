@@ -6,7 +6,7 @@ import pytest
 from ops.testing import Harness
 
 
-@pytest.mark.usefixtures("mock_container_fs")
+@pytest.mark.usefixtures("mock_container_fs", "mock_container_exec")
 def test_flask_pebble_layer(harness: Harness) -> None:
     """
     arrange: none
@@ -27,6 +27,7 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     }
 
 
+@pytest.mark.usefixtures("mock_container_exec")
 def test_gunicorn_config(harness: Harness, mock_container_fs: dict[str, str]) -> None:
     """
     arrange: start the flask charm and set flask-app container to be ready.
