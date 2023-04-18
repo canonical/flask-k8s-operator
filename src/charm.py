@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 class FlaskCharm(CharmBase):
     """Flask Charm service."""
 
+    _FLASK_CONTAINER_NAME = "flask-app"
+
     def __init__(self, *args: typing.Any) -> None:
         """Initialize the instance.
 
@@ -30,14 +32,18 @@ class FlaskCharm(CharmBase):
         super().__init__(*args)
         self._charm_state = CharmState(charm_config=self.config)
         self._webserver = GunicornWebserver(charm_state=self._charm_state)
-        self.framework.observe(self.on.config_changed, self.config_service)
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
 
-    def flask_container(self, require_connected: bool = True) -> Container:
+    def flask_container_can_connect(self):
+        """Check if the Flask pebble service is connectable.
+
+        Returns:
+            True if the Flask pebble service is connectable, False otherwise.
+        """
+        return self.unit.get_container(self._FLASK_CONTAINER_NAME).can_connect()
+
+    def flask_container(self) -> Container:
         """Get the flask application workload container controller.
-
-        Args:
-            require_connected: if set to ``True``, a runtime exception will be raised if the
-                pebble service inside the container is not ready.
 
         Return:
             The controller of the flask application workload container.
@@ -46,21 +52,23 @@ class FlaskCharm(CharmBase):
             RuntimeError: if the pebble service inside the container is not ready while the
                 ``require_connected`` is set to True.
         """
-        container = self.unit.get_container("flask-app")
-        if require_connected and not container.can_connect():
+        if not self.flask_container_can_connect():
             raise RuntimeError("pebble inside flask-app container is not ready")
+
+        container = self.unit.get_container(self._FLASK_CONTAINER_NAME)
         return container
 
-    def config_service(self, event: ConfigChangedEvent) -> None:
+    def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
 
         Args:
             event: the config-changed event that trigger this callback function.
         """
-        container = self.flask_container(require_connected=False)
-        if not container.can_connect():
+        if not self.flask_container_can_connect():
             event.defer()
             return
+
+        container = self.flask_container()
 
         service_name = "flask-app"
         container.add_layer("flask-app", self.flask_layer(), combine=True)

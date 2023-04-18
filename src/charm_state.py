@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""This module defines the CharmState class which represent the state of the Flask charm."""
+"""This module defines the CharmState class which represents the state of the Flask charm."""
 
 import datetime
 import pathlib
