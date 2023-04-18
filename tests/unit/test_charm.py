@@ -5,6 +5,8 @@
 import pytest
 from ops.testing import Harness
 
+FLASK_BASE_DIR = "/srv/flask"
+
 
 @pytest.mark.usefixtures("mock_container_fs", "mock_container_exec")
 def test_flask_pebble_layer(harness: Harness) -> None:
@@ -20,7 +22,7 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     assert flask_layer == {
         "override": "replace",
         "summary": "Flask application service",
-        "command": "python3 -m gunicorn -c /srv/flask/gunicorn.conf.py app:app",
+        "command": f"python3 -m gunicorn -c {FLASK_BASE_DIR}/gunicorn.conf.py app:app",
         "startup": "enabled",
         "user": "flask",
         "group": "flask",
@@ -38,17 +40,17 @@ def test_gunicorn_config(harness: Harness, mock_container_fs: dict[str, str]) ->
     harness.set_can_connect(harness.model.unit.containers["flask-app"], True)
     harness.framework.reemit()
     harness.update_config({"webserver_workers": 1})
-    assert mock_container_fs.get("/srv/flask/gunicorn.conf.py") == "\n".join(
-        ["bind = ['0.0.0.0:8000']", "chdir = '/srv/flask/app'", "workers = 1"]
+    assert mock_container_fs.get(f"{FLASK_BASE_DIR}/gunicorn.conf.py") == "\n".join(
+        ["bind = ['0.0.0.0:8000']", f"chdir = '{FLASK_BASE_DIR}/app'", "workers = 1"]
     )
     harness.update_config(
         {"webserver_threads": 2, "webserver_timeout": 3, "webserver_keepalive": 4},
         unset=["webserver_workers"],
     )
-    assert mock_container_fs.get("/srv/flask/gunicorn.conf.py") == "\n".join(
+    assert mock_container_fs.get(f"{FLASK_BASE_DIR}/gunicorn.conf.py") == "\n".join(
         [
             "bind = ['0.0.0.0:8000']",
-            "chdir = '/srv/flask/app'",
+            f"chdir = '{FLASK_BASE_DIR}/app'",
             "threads = 2",
             "keepalive = 4",
             "timeout = 3",

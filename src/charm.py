@@ -8,7 +8,6 @@ import logging
 import shlex
 import typing
 
-import ops.pebble
 from ops.charm import CharmBase, ConfigChangedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container
@@ -79,7 +78,13 @@ class FlaskCharm(CharmBase):
         current_webserver_config = self.pull_file(webserver_config_path)
         is_webserver_running = container.get_service(service_name).is_running()
         self.push_file(webserver_config_path, self._webserver.config)
-        if self.exec(self._webserver.check_config_command).exit_code:
+        config_check_result = self.exec(self._webserver.check_config_command)
+        if config_check_result.exit_code:
+            logger.error(
+                f"webserver configuration check failed, "
+                f"stdout: {config_check_result.stdout}, "
+                f"stderr: {config_check_result.stderr}"
+            )
             self.unit.status = BlockedStatus(
                 "Webserver configuration check failed, please review your charm configuration"
             )
@@ -120,6 +125,8 @@ class FlaskCharm(CharmBase):
     def exec(self, command: list[str]) -> ExecResult:
         """Execute a command inside the Flask workload container.
 
+        The command will be executed with user flask group flask inside the container.
+
         Args:
             command: A list of strings representing the command to be executed.
 
@@ -127,7 +134,7 @@ class FlaskCharm(CharmBase):
             ExecResult: An `ExecResult` object representing the result of the command execution.
         """
         container = self.container()
-        exec_process: ops.pebble.ExecProcess = container.exec(command)
+        exec_process = container.exec(command, user="flask", group="flask")
         try:
             stdout, stderr = exec_process.wait_output()
             return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
