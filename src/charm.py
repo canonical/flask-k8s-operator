@@ -71,7 +71,6 @@ class FlaskCharm(CharmBase):
             return
 
         container = self.container()
-
         service_name = "flask-app"
         container.add_layer("flask-app", self.flask_layer(), combine=True)
         webserver_config_path = str(self._webserver.config_path)
@@ -81,9 +80,9 @@ class FlaskCharm(CharmBase):
         config_check_result = self.exec(self._webserver.check_config_command)
         if config_check_result.exit_code:
             logger.error(
-                f"webserver configuration check failed, "
-                f"stdout: {config_check_result.stdout}, "
-                f"stderr: {config_check_result.stderr}"
+                "webserver configuration check failed, stdout: %s, stderr: %s",
+                config_check_result.stdout,
+                config_check_result.stderr
             )
             self.unit.status = BlockedStatus(
                 "Webserver configuration check failed, please review your charm configuration"
