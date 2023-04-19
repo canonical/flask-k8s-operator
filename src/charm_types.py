@@ -26,6 +26,31 @@ class WebserverConfig(typing.NamedTuple):
     timeout: datetime.timedelta | None
 
 
+class FlaskConfig(typing.NamedTuple):
+    """Represent the configuration values for a Flask application.
+
+    Attributes:
+        env: This corresponds to the Flask ENV configuration value.
+        debug: This corresponds to the Flask DEBUG configuration value.
+        secret_key: This corresponds to the Flask SECRET_KEY configuration value.
+        permanent_session_lifetime: This corresponds to the Flask PERMANENT_SESSION_LIFETIME
+            configuration value.
+        application_root: This corresponds to the Flask APPLICATION_ROOT configuration value.
+        session_cookie_secure: This corresponds to the Flask SESSION_COOKIE_SECURE
+            configuration value.
+        preferred_url_scheme: This corresponds to the Flask PREFERRED_URL_SCHEME
+            configuration value.
+    """
+
+    env: str | None
+    debug: bool
+    secret_key: str | None
+    permanent_session_lifetime: datetime.timedelta | None
+    application_root: str | None
+    session_cookie_secure: bool
+    preferred_url_scheme: str | None
+
+
 class ExecResult(typing.NamedTuple):
     """A named tuple representing the result of executing a command.
 

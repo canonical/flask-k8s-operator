@@ -15,6 +15,7 @@ from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 from charm_types import ExecResult
+from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class FlaskCharm(CharmBase):
         super().__init__(*args)
         self._charm_state = CharmState(charm_config=self.config)
         self._webserver = GunicornWebserver(charm_state=self._charm_state)
+        self._flask_app = FlaskApp(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
 
     def container_can_connect(self) -> bool:
@@ -157,6 +159,7 @@ class FlaskCharm(CharmBase):
                     "user": "flask",
                     "group": "flask",
                     "startup": "enabled",
+                    "environment": self._flask_app.flask_environment,
                 }
             },
         }

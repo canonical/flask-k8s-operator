@@ -7,7 +7,7 @@ import datetime
 import pathlib
 import typing
 
-from charm_types import WebserverConfig
+from charm_types import FlaskConfig, WebserverConfig
 
 
 class CharmState:
@@ -78,3 +78,26 @@ class CharmState:
             The port number to use for the Flask server.
         """
         return 8000
+
+    @property
+    def flask_config(self) -> FlaskConfig:
+        """Build a Flask configuration object from the charm configuration.
+
+        Returns:
+            A Flask configuration object.
+        """
+        charm_config = self._charm_config
+        return FlaskConfig(
+            env=charm_config.get("flask_env"),
+            debug=str(charm_config["flask_debug"]).lower() == "true",
+            secret_key=charm_config.get("flask_secret_key"),
+            permanent_session_lifetime=None
+            if charm_config.get("flask_permanent_session_lifetime") is None
+            else datetime.timedelta(
+                seconds=int(charm_config.get("flask_permanent_session_lifetime", "0"))
+            ),
+            application_root=charm_config.get("flask_application_root"),
+            session_cookie_secure=str(charm_config["flask_session_cookie_secure"]).lower()
+            == "true",
+            preferred_url_scheme=charm_config.get("flask_preferred_url_scheme"),
+        )
