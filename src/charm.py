@@ -88,7 +88,7 @@ class FlaskCharm(CharmBase):
                 "Webserver configuration check failed, please review your charm configuration"
             )
             return
-        if current_webserver_config != self._webserver.config and is_webserver_running:
+        if self._webserver.should_reload(current_webserver_config) and is_webserver_running:
             logger.info("gunicorn config changed, reloading")
             container.send_signal(self._webserver.reload_signal, service_name)
         container.replan()
