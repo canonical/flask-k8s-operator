@@ -80,17 +80,22 @@ async def test_flask_webserver_threads_workers(
 
     def blocking_request():
         """Send a 5 seconds blocking request to the Flask server."""
-        assert requests.get(f"http://{unit_ip}:8000/sleep?duration=5", timeout=10).ok
+        assert requests.get(f"http://{unit_ip}:8000/sleep?duration=7", timeout=10).ok
 
     for unit_ip in await get_unit_ips(flask_app.name):
         threads = [threading.Thread(target=blocking_request) for _ in range(max_concurrency - 1)]
         for thread in threads:
             thread.start()
+        time.sleep(1)
         time_start = time.time()
         assert requests.get(f"http://{unit_ip}:8000/sleep?duration=0", timeout=10).ok
         assert time.time() - time_start < 1
         blocking_thread = threading.Thread(target=blocking_request)
         blocking_thread.start()
+        time.sleep(1)
         time_start = time.time()
         assert requests.get(f"http://{unit_ip}:8000/sleep?duration=0", timeout=10).ok
         assert time.time() - time_start > 3
+        for thread in threads:
+            thread.join()
+        blocking_thread.join()
