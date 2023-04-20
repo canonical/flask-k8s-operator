@@ -62,10 +62,11 @@ async def update_config(model: Model, request: FixtureRequest, flask_app: Applic
     """
     orig_config = await flask_app.get_config()
     request_config = {k: str(v) for k, v in request.param.items()}
+    print(request_config)
     await flask_app.set_config(request_config)
-    await model.wait_for_idle()
+    await model.wait_for_idle(apps=[flask_app.name])
 
     yield request_config
 
     await flask_app.set_config({k: v for k, v in orig_config.items() if k in request_config})
-    await model.wait_for_idle()
+    await model.wait_for_idle(apps=[flask_app.name])

@@ -12,4 +12,3 @@ options:
   webserver_timeout:
     type: int
     description: Webserver workers silent for more than this many seconds are killed and restarted.
-

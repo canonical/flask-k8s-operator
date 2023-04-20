@@ -78,7 +78,7 @@ class GunicornWebserver:
         return self.command + ["--check-config"]
 
     def should_reload(self, current_config: str | None) -> bool:
-        """Returns whether the given current config is different from the desired configuration.
+        """Return whether the given current config is different from the desired configuration.
 
         Args:
             current_config: A string representing the current configuration.
@@ -87,7 +87,7 @@ class GunicornWebserver:
             bool: True if the 'current_config' is different from the desired configuration and
                 a reload is need to apply the new configuration, False otherwise.
         """
-        return self.config == current_config
+        return self.config != current_config
 
     @property
     def reload_signal(self) -> signal.Signals:
