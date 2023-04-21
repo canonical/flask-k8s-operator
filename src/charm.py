@@ -7,6 +7,7 @@
 import logging
 import typing
 
+from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import CharmBase, ConfigChangedEvent
 from ops.main import main
 from ops.model import ActiveStatus
@@ -25,6 +26,12 @@ class FlaskCharm(CharmBase):
         """
         super().__init__(*args)
         self.framework.observe(self.on.config_changed, self.config_service)
+        self.ingress = IngressPerAppRequirer(
+            self,
+            port=8000,
+            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
+            strip_prefix=True,
+        )
 
     def config_service(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
