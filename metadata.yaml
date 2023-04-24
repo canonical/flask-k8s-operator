@@ -1,15 +1,13 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 name: flask-k8s
-
 display-name: Flask
-
 summary: Turn any Flask application into a charm.
-
 description: Flask charm can turn any Flask application into a charm.
-
 docs: ""
-
 issues: https://github.com/canonical/flask-k8s-operator/issues
-
+source: https://github.com/canonical/flask-k8s-operator
 maintainers:
   - launchpad.net/~canonical-is-devops
 
@@ -21,3 +19,8 @@ resources:
   flask-app-image:
     type: oci-image
     description: Flask application image.
+
+requires:
+  ingress:
+    interface: ingress
+    limit: 1
