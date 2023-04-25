@@ -5,7 +5,8 @@
 
 import datetime
 import pathlib
-import typing
+
+from ops.charm import CharmBase
 
 from charm_types import WebserverConfig
 
@@ -13,13 +14,50 @@ from charm_types import WebserverConfig
 class CharmState:
     """Represents the state of the Flask charm."""
 
-    def __init__(self, charm_config: typing.Mapping[str, str]):
+    def __init__(
+        self,
+        webserver_workers: int | None = None,
+        webserver_threads: int | None = None,
+        webserver_keepalive: int | None = None,
+        webserver_timeout: int | None = None,
+    ):
         """Initialize a new instance of the CharmState class.
 
         Args:
-            charm_config: Charm configurations of the charm instance associated with this state.
+            webserver_workers: The number of workers to use for the web server,
+                or None if not specified.
+            webserver_threads: The number of threads per worker to use for the web server,
+                or None if not specified.
+            webserver_keepalive: The time to wait for requests on a Keep-Alive connection,
+                or None if not specified.
+            webserver_timeout: The request silence timeout for the web server,
+                or None if not specified.
         """
-        self._charm_config = charm_config
+        self._webserver_workers = webserver_workers
+        self._webserver_threads = webserver_threads
+        self._webserver_keepalive = webserver_keepalive
+        self._webserver_timeout = webserver_timeout
+
+    @classmethod
+    def from_charm(cls, charm: CharmBase) -> "CharmState":
+        """Initialize a new instance of the CharmState class from the associated charm.
+
+        Args:
+            charm: The charm instance associated with this state.
+
+        Return:
+            The CharmState instance created by the provided charm.
+        """
+        keepalive = charm.config.get("webserver_keepalive")
+        timeout = charm.config.get("webserver_timeout")
+        workers = charm.config.get("webserver_workers")
+        threads = charm.config.get("webserver_threads")
+        return cls(
+            webserver_workers=int(workers) if workers is not None else None,
+            webserver_threads=int(threads) if threads is not None else None,
+            webserver_keepalive=int(keepalive) if keepalive is not None else None,
+            webserver_timeout=int(timeout) if timeout is not None else None,
+        )
 
     @property
     def webserver_config(self) -> WebserverConfig:
@@ -28,17 +66,15 @@ class CharmState:
         Returns:
             The web server configuration file content for the charm.
         """
-        keepalive = self._charm_config.get("webserver_keepalive")
-        timeout = self._charm_config.get("webserver_timeout")
-        workers = self._charm_config.get("webserver_workers")
-        threads = self._charm_config.get("webserver_threads")
         return WebserverConfig(
-            workers=int(workers) if workers is not None else None,
-            threads=int(threads) if threads is not None else None,
-            keepalive=datetime.timedelta(seconds=int(keepalive))
-            if keepalive is not None
+            workers=self._webserver_workers,
+            threads=self._webserver_threads,
+            keepalive=datetime.timedelta(seconds=int(self._webserver_keepalive))
+            if self._webserver_keepalive is not None
             else None,
-            timeout=datetime.timedelta(seconds=int(timeout)) if timeout is not None else None,
+            timeout=datetime.timedelta(seconds=int(self._webserver_timeout))
+            if self._webserver_timeout is not None
+            else None,
         )
 
     @property
