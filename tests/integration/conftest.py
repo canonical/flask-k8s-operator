@@ -6,6 +6,8 @@
 import asyncio
 import json
 
+import juju
+import pytest
 import pytest_asyncio
 from juju.application import Application
 from juju.model import Model
@@ -31,6 +33,14 @@ async def flask_app_fixture(ops_test: OpsTest, model: Model, pytestconfig: Confi
         model.wait_for_idle(apps=[app_name], raise_on_blocked=True),
     )
     return deploy_result[0]
+
+
+async def model_fixture(ops_test: OpsTest) -> juju.model.Model:
+    """Provide current test model."""
+    assert ops_test.model
+    model_config = {"logging-config": "<root>=INFO;unit=DEBUG"}
+    await ops_test.model.set_config(model_config)
+    return ops_test.model
 
 
 @pytest_asyncio.fixture(scope="module", name="get_unit_ips")
@@ -69,3 +79,20 @@ async def update_config(model: Model, request: FixtureRequest, flask_app: Applic
 
     await flask_app.set_config({k: v for k, v in orig_config.items() if k in request_config})
     await model.wait_for_idle(apps=[flask_app.name])
+
+
+@pytest_asyncio.fixture(scope="module", name="flask_app")
+async def flask_app_fixture(
+    ops_test: OpsTest,
+    pytestconfig: pytest.Config,
+    model: juju.model.Model,
+):
+    """Build and deploy the flask charm."""
+    app_name = "flask-k8s"
+    charm = await ops_test.build_charm(".")
+    resources = {"flask-app-image": pytestconfig.getoption("--flask-app-image")}
+    deploy_result = await asyncio.gather(
+        model.deploy(charm, resources=resources, application_name=app_name, series="jammy"),
+        model.wait_for_idle(apps=[app_name], raise_on_blocked=True),
+    )
+    return deploy_result[0]

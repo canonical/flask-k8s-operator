@@ -8,6 +8,7 @@ import logging
 import shlex
 import typing
 
+from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import CharmBase, ConfigChangedEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container
@@ -24,6 +25,7 @@ class FlaskCharm(CharmBase):
     """Flask Charm service."""
 
     _FLASK_CONTAINER_NAME = "flask-app"
+    _FLASK_APP_PORT = 8000
 
     def __init__(self, *args: typing.Any) -> None:
         """Initialize the instance.
@@ -35,6 +37,15 @@ class FlaskCharm(CharmBase):
         self._charm_state = CharmState.from_charm(charm=self)
         self._webserver = GunicornWebserver(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.ingress = IngressPerAppRequirer(
+            self,
+            port=self._FLASK_APP_PORT,
+            # We're forced to use the app's service endpoint
+            # as the ingress per app interface currently always routes to the leader.
+            # https://github.com/canonical/traefik-k8s-operator/issues/159
+            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
+            strip_prefix=True,
+        )
 
     def container_can_connect(self) -> bool:
         """Check if the Flask pebble service is connectable.
