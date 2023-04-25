@@ -12,8 +12,6 @@ import typing
 import juju
 import pytest
 import requests
-
-from juju.application import Application
 from ops.model import ActiveStatus, Application
 from pytest_operator.plugin import OpsTest
 
@@ -103,6 +101,7 @@ async def test_flask_webserver_threads_workers(
         for thread in threads:
             thread.join()
         blocking_thread.join()
+
 
 async def test_with_ingress(
     ops_test: OpsTest,
