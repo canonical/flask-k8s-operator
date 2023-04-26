@@ -62,9 +62,9 @@ async def test_flask_webserver_timeout(
 @pytest.mark.parametrize(
     "update_config, max_concurrency",
     [
-        ({"webserver_timeout": 30, "webserver_threads": 2, "webserver_workers": 3}, 6),
-        ({"webserver_timeout": 30, "webserver_threads": 1, "webserver_workers": 5}, 5),
-        ({"webserver_timeout": 30, "webserver_threads": 3, "webserver_workers": 3}, 9),
+        ({"webserver_timeout": 15, "webserver_threads": 2, "webserver_workers": 3}, 6),
+        ({"webserver_timeout": 15, "webserver_threads": 1, "webserver_workers": 5}, 5),
+        ({"webserver_timeout": 15, "webserver_threads": 3, "webserver_workers": 3}, 9),
     ],
     indirect=["update_config"],
 )
@@ -85,15 +85,19 @@ async def test_flask_webserver_threads_workers(
         assert requests.get(f"http://{unit_ip}:8000/sleep?duration=7", timeout=10).ok
 
     for unit_ip in await get_unit_ips(flask_app.name):
+        # wait for webserver to reload
+        time.sleep(30)
         threads = [threading.Thread(target=blocking_request) for _ in range(max_concurrency - 1)]
         for thread in threads:
             thread.start()
+        # wait for connections established in threads
         time.sleep(1)
         time_start = time.time()
         assert requests.get(f"http://{unit_ip}:8000/sleep?duration=0", timeout=10).ok
         assert time.time() - time_start < 1
         blocking_thread = threading.Thread(target=blocking_request)
         blocking_thread.start()
+        # wait for the blocking connection established
         time.sleep(1)
         time_start = time.time()
         assert requests.get(f"http://{unit_ip}:8000/sleep?duration=0", timeout=10).ok
