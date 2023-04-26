@@ -26,6 +26,7 @@ class FlaskCharm(CharmBase):
 
     _FLASK_CONTAINER_NAME = "flask-app"
     _FLASK_APP_PORT = 8000
+    _SERVICE_NAME = "flask-app"
 
     def __init__(self, *args: typing.Any) -> None:
         """Initialize the instance.
@@ -71,6 +72,10 @@ class FlaskCharm(CharmBase):
         container = self.unit.get_container(self._FLASK_CONTAINER_NAME)
         return container
 
+    def reload_webserver(self) -> None:
+        """Send a signal to the webserver to reload the webserver configuration."""
+        self.container().send_signal(self._webserver.reload_signal, self._SERVICE_NAME)
+
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
 
@@ -82,11 +87,11 @@ class FlaskCharm(CharmBase):
             return
 
         container = self.container()
-        service_name = "flask-app"
+
         container.add_layer("flask-app", self.flask_layer(), combine=True)
         webserver_config_path = str(self._webserver.config_path)
         current_webserver_config = self.pull_file(webserver_config_path)
-        is_webserver_running = container.get_service(service_name).is_running()
+        is_webserver_running = container.get_service(self._SERVICE_NAME).is_running()
         self.push_file(webserver_config_path, self._webserver.config)
         config_check_result = self.exec(self._webserver.check_config_command)
         if config_check_result.exit_code:
@@ -101,7 +106,7 @@ class FlaskCharm(CharmBase):
             return
         if self._webserver.should_reload(current_webserver_config) and is_webserver_running:
             logger.info("gunicorn config changed, reloading")
-            container.send_signal(self._webserver.reload_signal, service_name)
+            self.reload_webserver()
         container.replan()
         self.unit.status = ActiveStatus()
 
