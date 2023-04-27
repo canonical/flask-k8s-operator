@@ -1,8 +1,8 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 name: flask-app
-summary: A flask sample app
-description: OCI image for the sample flask app
+summary: A flask hello world app
+description: OCI image for the hello world flask app
 version: "0.1"
 base: bare
 build-base: ubuntu:22.04
@@ -31,13 +31,13 @@ parts:
     plugin: nil
     overlay-script: |
       mkdir -p $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
-      pip install -r $CRAFT_PART_SRC_WORK/sample-app/requirements.txt --target $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
+      pip install -r $CRAFT_PART_SRC_WORK/simple-mysql/requirements.txt --target $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
       chown 2000:2000 -R $CRAFT_OVERLAY/srv/flask/
   flask-app:
     plugin: dump
     source: .
     organize:
-      sample-app: srv/flask/app
+      simple-mysql: srv/flask/app
     prime:
       - srv/flask/app
     permissions:

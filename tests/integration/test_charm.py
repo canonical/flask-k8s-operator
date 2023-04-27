@@ -62,3 +62,28 @@ async def test_with_ingress(
     )
     assert response.status_code == 200
     assert "Hello, World!" in response.text
+
+
+async def test_with_mysql(
+    ops_test: OpsTest,
+    model: juju.model.Model,
+    flask_app: Application,
+    get_unit_ips,
+):
+    """
+    arrange: build and deploy the flask charm.
+    act: deploy the ingress, configure it and relate it to the charm.
+    assert: requesting the charm through traefik should return a correct response
+    """
+    mysql_app = await model.deploy("mysql-k8s", channel="8.0/stable")
+    await model.wait_for_idle()
+
+    await model.add_relation(flask_app.name, mysql_app.name)
+
+    # mypy doesn't see that ActiveStatus has a name
+    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+
+    for unit_ip in await get_unit_ips(flask_app.name):
+        response = requests.get(f"http://{unit_ip}:8000", timeout=5)
+        print(response.text)
+        assert response.status_code == 200
