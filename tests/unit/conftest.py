@@ -38,7 +38,7 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
                 else:
                     return ExecResult(1, "", "")
             case _:
-                raise RuntimeError(f"unknown command: {['python3']+ argv}")
+                raise RuntimeError(f"unknown command: {argv}")
 
     flask_container_exec.register_executable(executable="python", handler=python_exec_handler)
 
