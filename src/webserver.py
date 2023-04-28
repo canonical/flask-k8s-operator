@@ -2,22 +2,33 @@
 # See LICENSE file for licensing details.
 
 """Provide the GunicornWebserver class to represent the gunicorn server."""
+import logging
 import pathlib
 import signal
+import typing
+
+from ops.model import BlockedStatus, Container
+from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
+from charm_types import ExecResult
+from exceptions import ChangeStatusException
+
+logger = logging.getLogger(__name__)
 
 
 class GunicornWebserver:
     """A class representing a Gunicorn web server."""
 
-    def __init__(self, charm_state: CharmState):
+    def __init__(self, charm_state: CharmState, flask_container: Container):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:
             charm_state: The state of the charm that the GunicornWebserver instance belongs to.
+            flask_container: The Flask container in this charm unit.
         """
         self._charm_state = charm_state
+        self._flask_container = flask_container
 
     @property
     def config(self) -> str:
@@ -77,18 +88,6 @@ class GunicornWebserver:
         """
         return self.command + ["--check-config"]
 
-    def should_reload(self, current_config: str | None) -> bool:
-        """Return whether the given current config is different from the desired configuration.
-
-        Args:
-            current_config: A string representing the current configuration.
-
-        Returns:
-            bool: True if the 'current_config' is different from the desired configuration and
-                a reload is need to apply the new configuration, False otherwise.
-        """
-        return self.config != current_config
-
     @property
     def reload_signal(self) -> signal.Signals:
         """Get the signal used to reload the Gunicorn web server.
@@ -97,3 +96,55 @@ class GunicornWebserver:
             The signal used to reload the Gunicorn web server.
         """
         return signal.SIGHUP
+
+    def _exec(self, command: list[str]) -> ExecResult:
+        """Execute a command inside the Flask workload container.
+
+        The command will be executed with user flask group flask inside the container.
+
+        Args:
+            command: A list of strings representing the command to be executed.
+
+        Returns:
+            ExecResult: An `ExecResult` object representing the result of the command execution.
+        """
+        container = self._flask_container
+        exec_process = container.exec(command, user="flask", group="flask")
+        try:
+            stdout, stderr = exec_process.wait_output()
+            return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
+        except ExecError as exc:
+            return ExecResult(
+                exc.exit_code, typing.cast(str, exc.stdout), typing.cast(str, exc.stderr)
+            )
+
+    def update_config(self, is_webserver_running: bool) -> None:
+        """Update and apply the configuration file of the web server.
+
+        Args:
+            is_webserver_running: Indicates if the web server container is currently running.
+
+        Raises:
+            ChangeStatusException: If the web server configuration check fails.
+        """
+        webserver_config_path = str(self.config_path)
+        try:
+            current_webserver_config = self._flask_container.pull(webserver_config_path)
+        except PathError:
+            current_webserver_config = None
+        self._flask_container.push(webserver_config_path, self.config)
+        config_check_result = self._exec(self.check_config_command)
+        if config_check_result.exit_code:
+            logger.error(
+                "webserver configuration check failed, stdout: %s, stderr: %s",
+                config_check_result.stdout,
+                config_check_result.stderr,
+            )
+            raise ChangeStatusException(
+                status=BlockedStatus(
+                    "Webserver configuration check failed, please review your charm configuration"
+                )
+            )
+        if current_webserver_config != self.config and is_webserver_running:
+            logger.info("gunicorn config changed, reloading")
+            self._flask_container.send_signal(self.reload_signal)
