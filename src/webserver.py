@@ -133,6 +133,8 @@ class GunicornWebserver:
         except PathError:
             current_webserver_config = None
         self._flask_container.push(webserver_config_path, self._config)
+        if current_webserver_config == self._config:
+            return
         config_check_result = self._exec(self._check_config_command)
         if config_check_result.exit_code:
             logger.error(
@@ -145,6 +147,6 @@ class GunicornWebserver:
                     "Webserver configuration check failed, please review your charm configuration"
                 )
             )
-        if current_webserver_config != self._config and is_webserver_running:
+        if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
             self._flask_container.send_signal(self._reload_signal)
