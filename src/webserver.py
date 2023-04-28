@@ -31,7 +31,7 @@ class GunicornWebserver:
         self._flask_container = flask_container
 
     @property
-    def config(self) -> str:
+    def _config(self) -> str:
         """Generate the content of the Gunicorn configuration file based on charm states.
 
         Returns:
@@ -55,7 +55,7 @@ class GunicornWebserver:
         return "\n".join(config_entries)
 
     @property
-    def config_path(self) -> pathlib.Path:
+    def _config_path(self) -> pathlib.Path:
         """Gets the path to the Gunicorn configuration file.
 
         Returns:
@@ -75,12 +75,12 @@ class GunicornWebserver:
             "-m",
             "gunicorn",
             "-c",
-            str(self.config_path),
+            str(self._config_path),
             self._charm_state.flask_wsgi_app_path,
         ]
 
     @property
-    def check_config_command(self) -> list[str]:
+    def _check_config_command(self) -> list[str]:
         """Returns the command to check the Gunicorn configuration.
 
         Returns:
@@ -89,7 +89,7 @@ class GunicornWebserver:
         return self.command + ["--check-config"]
 
     @property
-    def reload_signal(self) -> signal.Signals:
+    def _reload_signal(self) -> signal.Signals:
         """Get the signal used to reload the Gunicorn web server.
 
         Returns:
@@ -127,13 +127,13 @@ class GunicornWebserver:
         Raises:
             ChangeStatusException: If the web server configuration check fails.
         """
-        webserver_config_path = str(self.config_path)
+        webserver_config_path = str(self._config_path)
         try:
             current_webserver_config = self._flask_container.pull(webserver_config_path)
         except PathError:
             current_webserver_config = None
-        self._flask_container.push(webserver_config_path, self.config)
-        config_check_result = self._exec(self.check_config_command)
+        self._flask_container.push(webserver_config_path, self._config)
+        config_check_result = self._exec(self._check_config_command)
         if config_check_result.exit_code:
             logger.error(
                 "webserver configuration check failed, stdout: %s, stderr: %s",
@@ -145,6 +145,6 @@ class GunicornWebserver:
                     "Webserver configuration check failed, please review your charm configuration"
                 )
             )
-        if current_webserver_config != self.config and is_webserver_running:
+        if current_webserver_config != self._config and is_webserver_running:
             logger.info("gunicorn config changed, reloading")
-            self._flask_container.send_signal(self.reload_signal)
+            self._flask_container.send_signal(self._reload_signal)
