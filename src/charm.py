@@ -14,7 +14,7 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container
 
 from charm_state import CharmState
-from exceptions import ChangeStatusException
+from exceptions import WebserverConfigInvalid
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,9 @@ class FlaskCharm(CharmBase):
         """
         super().__init__(*args)
         self._charm_state = CharmState.from_charm(charm=self)
-        self._webserver = GunicornWebserver(charm_state=self._charm_state)
+        self._webserver = GunicornWebserver(
+            charm_state=self._charm_state, flask_container=self.container()
+        )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.ingress = IngressPerAppRequirer(
             self,
@@ -86,8 +88,8 @@ class FlaskCharm(CharmBase):
         is_webserver_running = container.get_service(self._SERVICE_NAME).is_running()
         try:
             self._webserver.update_config(is_webserver_running=is_webserver_running)
-        except ChangeStatusException as exc:
-            self.unit.status = exc.status
+        except WebserverConfigInvalid as exc:
+            self.unit.status = BlockedStatus(exc.msg)
             return
         container.replan()
         self.unit.status = ActiveStatus()

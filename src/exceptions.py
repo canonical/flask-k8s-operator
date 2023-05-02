@@ -3,28 +3,20 @@
 
 """Exceptions used by the Flask charm."""
 
-from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 
-
-class ChangeStatusException(Exception):
-    """Exceptions raised when attempting to change the status of a charm unit.
+class WebserverConfigInvalid(Exception):
+    """
+    Exception raised when a webserver configuration is found to be invalid.
 
     Attrs:
-        status: The status that was attempted to be set.
+        msg (str): Explanation of the error.
     """
 
-    def __init__(self, status: ActiveStatus | BlockedStatus | MaintenanceStatus):
-        """Initializes a new instance of the ChangeStatusException class.
+    def __init__(self, msg):
+        """
+        Initializes a new instance of the WebserverConfigInvalid exception.
 
         Args:
-            status: The status that was attempted to be set.
+            msg (str): Explanation of the error.
         """
-        self.status = status
-
-    def __repr__(self) -> str:
-        """Returns a string representation of the ChangeStatusException instance.
-
-        Returns:
-            A string representation of the ChangeStatusException instance.
-        """
-        return f"ChangeStatusException(status={repr(self.status)}"
+        self.msg = msg

@@ -12,7 +12,7 @@ from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 from charm_types import ExecResult
-from exceptions import ChangeStatusException
+from exceptions import WebserverConfigInvalid
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class GunicornWebserver:
             is_webserver_running: Indicates if the web server container is currently running.
 
         Raises:
-            ChangeStatusException: If the web server configuration check fails.
+            WebserverConfigInvalid: If the web server configuration check fails.
         """
         webserver_config_path = str(self._config_path)
         try:
@@ -142,10 +142,8 @@ class GunicornWebserver:
                 config_check_result.stdout,
                 config_check_result.stderr,
             )
-            raise ChangeStatusException(
-                status=BlockedStatus(
-                    "Webserver configuration check failed, please review your charm configuration"
-                )
+            raise WebserverConfigInvalid(
+                "Webserver configuration check failed, please review your charm configuration"
             )
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
