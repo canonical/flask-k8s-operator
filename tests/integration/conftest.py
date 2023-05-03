@@ -68,7 +68,7 @@ async def update_config(model: Model, request: FixtureRequest, flask_app: Applic
 
     This fixture must be parameterized with changing charm configurations.
     """
-    orig_config = {k: v.get("value") for k, v in (await flask_app.get_config()).items}
+    orig_config = {k: v.get("value") for k, v in (await flask_app.get_config()).items()}
     request_config = {k: str(v) for k, v in request.param.items()}
     await flask_app.set_config(request_config)
     await model.wait_for_idle(apps=[flask_app.name])
