@@ -4,6 +4,7 @@
 
 """Integration tests for Flask charm."""
 
+import asyncio
 import logging
 import threading
 import time
@@ -36,6 +37,7 @@ async def test_flask_is_up(
     "update_config, timeout",
     [({"webserver_timeout": 7}, 7), ({"webserver_timeout": 5}, 5), ({"webserver_timeout": 3}, 3)],
     indirect=["update_config"],
+    ids=["timeout-7", "timeout-5", "timeout-3"]
 )
 @pytest.mark.usefixtures("update_config")
 async def test_flask_webserver_timeout(
@@ -67,6 +69,7 @@ async def test_flask_webserver_timeout(
         ({"webserver_timeout": 15, "webserver_threads": 3, "webserver_workers": 3}, 9),
     ],
     indirect=["update_config"],
+    ids=["concurrency-6", "concurrency-5", "concurrency-9"]
 )
 @pytest.mark.usefixtures("update_config")
 async def test_flask_webserver_threads_workers(
@@ -86,19 +89,19 @@ async def test_flask_webserver_threads_workers(
 
     for unit_ip in await get_unit_ips(flask_app.name):
         # wait for webserver to reload
-        time.sleep(30)
+        await asyncio.sleep(30)
         threads = [threading.Thread(target=blocking_request) for _ in range(max_concurrency - 1)]
         for thread in threads:
             thread.start()
         # wait for connections established in threads
-        time.sleep(1)
+        await asyncio.sleep(1)
         time_start = time.time()
         assert requests.get(f"http://{unit_ip}:8000/sleep?duration=0", timeout=10).ok
         assert time.time() - time_start < 1
         blocking_thread = threading.Thread(target=blocking_request)
         blocking_thread.start()
         # wait for the blocking connection established
-        time.sleep(1)
+        await asyncio.sleep(1)
         time_start = time.time()
         assert requests.get(f"http://{unit_ip}:8000/sleep?duration=0", timeout=10).ok
         assert time.time() - time_start > 3
