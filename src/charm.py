@@ -36,7 +36,8 @@ class FlaskCharm(CharmBase):
         super().__init__(*args)
         self._charm_state = CharmState.from_charm(charm=self)
         self._webserver = GunicornWebserver(
-            charm_state=self._charm_state, flask_container=self.container()
+            charm_state=self._charm_state,
+            flask_container=self.unit.get_container(self._FLASK_CONTAINER_NAME),
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.ingress = IngressPerAppRequirer(
