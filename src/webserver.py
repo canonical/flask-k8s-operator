@@ -13,7 +13,7 @@ from ops.pebble import ExecError, PathError
 from charm_state import CharmState
 from charm_types import ExecResult
 from consts import FLASK_SERVICE_NAME
-from exceptions import WebserverConfigInvalid
+from exceptions import WebserverConfigInvalidError
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +126,7 @@ class GunicornWebserver:
             is_webserver_running: Indicates if the web server container is currently running.
 
         Raises:
-            WebserverConfigInvalid: If the web server configuration check fails.
+            WebserverConfigInvalidError: If the web server configuration check fails.
         """
         webserver_config_path = str(self._config_path)
         try:
@@ -143,7 +143,7 @@ class GunicornWebserver:
                 config_check_result.stdout,
                 config_check_result.stderr,
             )
-            raise WebserverConfigInvalid(
+            raise WebserverConfigInvalidError(
                 "Webserver configuration check failed, please review your charm configuration"
             )
         if is_webserver_running:

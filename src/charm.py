@@ -15,7 +15,7 @@ from ops.model import ActiveStatus, BlockedStatus, Container
 
 from charm_state import CharmState
 from consts import FLASK_APP_PORT, FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
-from exceptions import WebserverConfigInvalid
+from exceptions import WebserverConfigInvalidError
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ class FlaskCharm(CharmBase):
         is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         try:
             self._webserver.update_config(is_webserver_running=is_webserver_running)
-        except WebserverConfigInvalid as exc:
+        except WebserverConfigInvalidError as exc:
             self.unit.status = BlockedStatus(exc.msg)
             return
         container.replan()

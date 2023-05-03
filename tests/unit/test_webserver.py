@@ -1,3 +1,8 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+"""Flask charm unit tests for the webserver module."""
+
 import textwrap
 import unittest.mock
 
@@ -38,7 +43,6 @@ FLASK_BASE_DIR = "/srv/flask"
     ],
 )
 def test_gunicorn_config(
-    monkeypatch,
     harness: Harness,
     charm_state_params,
     config_file,
