@@ -37,7 +37,7 @@ async def test_flask_is_up(
     "update_config, timeout",
     [({"webserver_timeout": 7}, 7), ({"webserver_timeout": 5}, 5), ({"webserver_timeout": 3}, 3)],
     indirect=["update_config"],
-    ids=["timeout-7", "timeout-5", "timeout-3"]
+    ids=["timeout-7", "timeout-5", "timeout-3"],
 )
 @pytest.mark.usefixtures("update_config")
 async def test_flask_webserver_timeout(
@@ -69,7 +69,7 @@ async def test_flask_webserver_timeout(
         ({"webserver_timeout": 15, "webserver_threads": 3, "webserver_workers": 3}, 9),
     ],
     indirect=["update_config"],
-    ids=["concurrency-6", "concurrency-5", "concurrency-9"]
+    ids=["concurrency-6", "concurrency-5", "concurrency-9"],
 )
 @pytest.mark.usefixtures("update_config")
 async def test_flask_webserver_threads_workers(
