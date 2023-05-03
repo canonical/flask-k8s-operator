@@ -5,8 +5,8 @@ import pytest
 from ops.model import Container
 from ops.testing import Harness
 
-from charm import FlaskCharm
 from charm_state import CharmState
+from consts import FLASK_CONTAINER_NAME
 from webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/srv/flask"
@@ -49,8 +49,8 @@ def test_gunicorn_config(
     act: invoke the update_config method of the webserver object.
     assert: gunicorn configuration file inside the flask app container should change accordingly.
     """
-    container: Container = harness.model.unit.get_container(FlaskCharm._FLASK_CONTAINER_NAME)
-    harness.set_can_connect(FlaskCharm._FLASK_CONTAINER_NAME, True)
+    container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     webserver = GunicornWebserver(
         charm_state=CharmState(**charm_state_params), flask_container=container
     )
@@ -66,8 +66,8 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running):
     act: run the update_config method of the webserver object with different server running status.
     assert: webserver object should send signal to the Gunicorn server based on the running status.
     """
-    container: Container = harness.model.unit.get_container(FlaskCharm._FLASK_CONTAINER_NAME)
-    harness.set_can_connect(FlaskCharm._FLASK_CONTAINER_NAME, True)
+    container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     container.push(f"{FLASK_BASE_DIR}/gunicorn.conf.py", "")
     webserver = GunicornWebserver(charm_state=CharmState(), flask_container=container)
     send_signal_mock = unittest.mock.MagicMock()

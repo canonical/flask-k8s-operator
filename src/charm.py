@@ -14,6 +14,7 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container
 
 from charm_state import CharmState
+from consts import FLASK_APP_PORT, FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
 from exceptions import WebserverConfigInvalid
 from webserver import GunicornWebserver
 
@@ -22,10 +23,6 @@ logger = logging.getLogger(__name__)
 
 class FlaskCharm(CharmBase):
     """Flask Charm service."""
-
-    _FLASK_CONTAINER_NAME = "flask-app"
-    _FLASK_APP_PORT = 8000
-    _SERVICE_NAME = "flask-app"
 
     def __init__(self, *args: typing.Any) -> None:
         """Initialize the instance.
@@ -37,12 +34,12 @@ class FlaskCharm(CharmBase):
         self._charm_state = CharmState.from_charm(charm=self)
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
-            flask_container=self.unit.get_container(self._FLASK_CONTAINER_NAME),
+            flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.ingress = IngressPerAppRequirer(
             self,
-            port=self._FLASK_APP_PORT,
+            port=FLASK_APP_PORT,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
@@ -56,7 +53,7 @@ class FlaskCharm(CharmBase):
         Returns:
             True if the Flask pebble service is connectable, False otherwise.
         """
-        return self.unit.get_container(self._FLASK_CONTAINER_NAME).can_connect()
+        return self.unit.get_container(FLASK_CONTAINER_NAME).can_connect()
 
     def container(self) -> Container:
         """Get the flask application workload container controller.
@@ -71,7 +68,7 @@ class FlaskCharm(CharmBase):
         if not self.container_can_connect():
             raise RuntimeError("pebble inside flask-app container is not ready")
 
-        container = self.unit.get_container(self._FLASK_CONTAINER_NAME)
+        container = self.unit.get_container(FLASK_CONTAINER_NAME)
         return container
 
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
@@ -86,7 +83,7 @@ class FlaskCharm(CharmBase):
 
         container = self.container()
         container.add_layer("flask-app", self.flask_layer(), combine=True)
-        is_webserver_running = container.get_service(self._SERVICE_NAME).is_running()
+        is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         try:
             self._webserver.update_config(is_webserver_running=is_webserver_running)
         except WebserverConfigInvalid as exc:

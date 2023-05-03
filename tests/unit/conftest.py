@@ -14,6 +14,7 @@ from ops.testing import Harness
 
 from charm import FlaskCharm
 from charm_types import ExecResult
+from consts import FLASK_CONTAINER_NAME
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
@@ -69,8 +70,8 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
     # the container with some files (/etc, /srv, etc). For now, the container is accessible
     # with the following API, but it requires you to set can connect before using it. Setting can
     # connect here can interfere with the actual test case.
-    flask_container: Container = harness.model.unit.get_container(FlaskCharm._FLASK_CONTAINER_NAME)
-    harness.set_can_connect(FlaskCharm._FLASK_CONTAINER_NAME, True)
+    flask_container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     flask_container.make_dir("/srv/flask", make_parents=True)
 
     def python_cmd_handler(argv: list[str]) -> ExecResult:

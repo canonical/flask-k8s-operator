@@ -7,11 +7,12 @@ import pathlib
 import signal
 import typing
 
-from ops.model import BlockedStatus, Container
+from ops.model import Container
 from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 from charm_types import ExecResult
+from consts import FLASK_SERVICE_NAME
 from exceptions import WebserverConfigInvalid
 
 logger = logging.getLogger(__name__)
@@ -147,4 +148,4 @@ class GunicornWebserver:
             )
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
-            self._flask_container.send_signal(self._reload_signal)
+            self._flask_container.send_signal(self._reload_signal, FLASK_SERVICE_NAME)

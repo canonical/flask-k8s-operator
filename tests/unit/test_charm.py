@@ -5,9 +5,6 @@
 
 # pylint: disable=protected-access
 
-import unittest.mock
-
-from ops.model import Container
 from ops.testing import Harness
 
 FLASK_BASE_DIR = "/srv/flask"
