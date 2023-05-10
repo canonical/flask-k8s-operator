@@ -15,7 +15,8 @@ from ops.model import ActiveStatus, BlockedStatus, Container
 
 from charm_state import CharmState
 from consts import FLASK_APP_PORT, FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
-from exceptions import WebserverConfigInvalidError
+from exceptions import CharmConfigInvalidError
+from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -31,11 +32,16 @@ class FlaskCharm(CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self._charm_state = CharmState.from_charm(charm=self)
+        try:
+            self._charm_state = CharmState.from_charm(charm=self)
+        except CharmConfigInvalidError as exc:
+            self.unit.status = BlockedStatus(exc.msg)
+            return
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
+        self._flask_app = FlaskApp(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.ingress = IngressPerAppRequirer(
             self,
@@ -86,7 +92,7 @@ class FlaskCharm(CharmBase):
         is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         try:
             self._webserver.update_config(is_webserver_running=is_webserver_running)
-        except WebserverConfigInvalidError as exc:
+        except CharmConfigInvalidError as exc:
             self.unit.status = BlockedStatus(exc.msg)
             return
         container.replan()
@@ -104,6 +110,7 @@ class FlaskCharm(CharmBase):
                     "override": "replace",
                     "summary": "Flask application service",
                     "command": shlex.join(self._webserver.command),
+                    "environment": self._flask_app.flask_environment,
                     "user": "flask",
                     "group": "flask",
                     "startup": "enabled",

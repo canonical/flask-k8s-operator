@@ -14,3 +14,39 @@ options:
   webserver_timeout:
     type: int
     description: Webserver workers silent for more than this many seconds are killed and restarted.
+  flask_env:
+    type: string
+    description: What environment the Flask app is running in, by default it's 'production'.
+  flask_debug:
+    type: boolean
+    description: Whether Flask debug mode is enabled.
+  flask_secret_key:
+    type: string
+    description: >
+      A secret key that will be used for securely signing the session cookie and can be used for any other security
+      related needs by your Flask application. This configuration will set the FLASK_SECRET_KEY environment variable.
+      You need to run `app.config.from_prefixed_env()` in your Flask application in order to receive this configuration.
+  flask_permanent_session_lifetime:
+    type: int
+    description: >
+      Set the cookie’s expiration to this number of seconds in the Flask application permanent sessions. 
+      This configuration will set the FLASK_PERMANENT_SESSION_LIFETIME environment variable. You need to run 
+      `app.config.from_prefixed_env()` in your Flask application in order to receive this configuration.
+  flask_application_root:
+    type: string
+    description: >
+      Inform the Flask application what path it is mounted under by the application / web server. This configuration
+      will set the FLASK_APPLICATION_ROOT environment variable. You need to run `app.config.from_prefixed_env()` in 
+      your Flask application in order to receive this configuration.
+  flask_session_cookie_secure:
+    type: boolean
+    description: >
+      Set the secure attribute in the Flask application cookies. This configuration will set the 
+      FLASK_SESSION_COOKIE_SECURE environment variable. You need to run `app.config.from_prefixed_env()` in your Flask
+      application in order to receive this configuration.
+  flask_preferred_url_scheme:
+    type: string
+    description: >
+      Use this scheme for generating external URLs when not in a request context in the Flask application. By default,
+      it's "HTTP" This configuration will set the  FLASK_PREFERRED_URL_SCHEME environment variable. You need to 
+      run `app.config.from_prefixed_env()` in your Flask application in order to receive this configuration.

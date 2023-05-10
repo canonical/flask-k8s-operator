@@ -75,7 +75,9 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running):
     container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     container.push(f"{FLASK_BASE_DIR}/gunicorn.conf.py", "")
-    webserver = GunicornWebserver(charm_state=CharmState(), flask_container=container)
+    webserver = GunicornWebserver(
+        charm_state=CharmState(flask_config={}), flask_container=container
+    )
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
     webserver.update_config(is_webserver_running=is_running)
