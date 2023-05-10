@@ -67,8 +67,6 @@ class FlaskCharm(CharmBase):
                         "/bin/python3 -m gunicorn --chdir /srv/flask/app app:app"
                         f" -b 0.0.0.0:{self._FLASK_APP_PORT}"
                     ),
-                    "user": "flask",
-                    "group": "flask",
                     "startup": "enabled",
                 }
             },
