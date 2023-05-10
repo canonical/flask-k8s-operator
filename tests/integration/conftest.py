@@ -6,6 +6,7 @@
 import asyncio
 import json
 
+import pytest
 import pytest_asyncio
 from juju.application import Application
 from juju.model import Model
@@ -20,15 +21,42 @@ async def fixture_model(ops_test: OpsTest) -> Model:
     return ops_test.model
 
 
+@pytest.fixture(scope="module", name="external_hostname")
+def external_hostname_fixture() -> str:
+    """Return the external hostname for ingress-related tests."""
+    return "juju.test"
+
+
+@pytest.fixture(scope="module", name="traefik_app_name")
+def traefik_app_name_fixture() -> str:
+    """Return the name of the traefix application deployed for tests."""
+    return "traefik-k8s"
+
+
 @pytest_asyncio.fixture(scope="module", name="flask_app")
-async def flask_app_fixture(ops_test: OpsTest, model: Model, pytestconfig: Config):
+async def flask_app_fixture(
+    ops_test: OpsTest,
+    model: Model,
+    pytestconfig: Config,
+    external_hostname: str,
+    traefik_app_name: str,
+):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
     charm = await ops_test.build_charm(".")
     resources = {"flask-app-image": pytestconfig.getoption("--flask-app-image")}
     deploy_result = await asyncio.gather(
         model.deploy(charm, resources=resources, application_name=app_name, series="jammy"),
-        model.wait_for_idle(apps=[app_name], raise_on_blocked=True),
+        model.deploy(
+            "traefik-k8s",
+            application_name=traefik_app_name,
+            trust=True,
+            config={
+                "external_hostname": external_hostname,
+                "routing_mode": "subdomain",
+            },
+        ),
+        model.wait_for_idle(apps=[app_name, traefik_app_name], raise_on_blocked=True),
     )
     return deploy_result[0]
 

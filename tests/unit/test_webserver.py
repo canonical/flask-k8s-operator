@@ -20,7 +20,7 @@ FLASK_BASE_DIR = "/srv/flask"
 @pytest.mark.parametrize(
     "charm_state_params, config_file",
     [
-        (
+        pytest.param(
             {"webserver_workers": 10},
             textwrap.dedent(
                 f"""\
@@ -28,8 +28,9 @@ FLASK_BASE_DIR = "/srv/flask"
                 chdir = '{FLASK_BASE_DIR}/app'
                 workers = 10"""
             ),
+            id="workers=10",
         ),
-        (
+        pytest.param(
             {"webserver_threads": 2, "webserver_timeout": 3, "webserver_keepalive": 4},
             textwrap.dedent(
                 f"""\
@@ -39,6 +40,7 @@ FLASK_BASE_DIR = "/srv/flask"
                 keepalive = 4
                 timeout = 3"""
             ),
+            id="threads=2,timeout=3,keepalive=4",
         ),
     ],
 )

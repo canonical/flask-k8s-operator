@@ -4,6 +4,8 @@
 
 """Integration tests for Flask charm."""
 
+# pylint: disable=too-many-arguments
+
 import logging
 import typing
 
@@ -32,9 +34,12 @@ async def test_flask_is_up(
 
 @pytest.mark.parametrize(
     "update_config, timeout",
-    [({"webserver_timeout": 7}, 7), ({"webserver_timeout": 5}, 5), ({"webserver_timeout": 3}, 3)],
+    [
+        pytest.param({"webserver_timeout": 7}, 7, id="timeout=7"),
+        pytest.param({"webserver_timeout": 5}, 5, id="timeout=5"),
+        pytest.param({"webserver_timeout": 3}, 3, id="timeout=3"),
+    ],
     indirect=["update_config"],
-    ids=["timeout-7", "timeout-5", "timeout-3"],
 )
 @pytest.mark.usefixtures("update_config")
 async def test_flask_webserver_timeout(
@@ -62,31 +67,20 @@ async def test_with_ingress(
     ops_test: OpsTest,
     model: juju.model.Model,
     flask_app: Application,
+    traefik_app_name: str,
+    external_hostname: str,
     get_unit_ips,
 ):
     """
-    arrange: build and deploy the flask charm.
-    act: deploy the ingress, configure it and relate it to the charm.
+    arrange: build and deploy the flask charm, and deploy the ingress.
+    act: relate the ingress charm with the Flask charm.
     assert: requesting the charm through traefik should return a correct response
     """
-    traefik_app = await model.deploy("traefik-k8s", trust=True)
-    await model.wait_for_idle()
-
-    external_hostname = "juju.local"
-    await traefik_app.set_config(
-        {
-            "external_hostname": external_hostname,
-            "routing_mode": "subdomain",
-        }
-    )
-    await model.wait_for_idle()
-
-    await model.add_relation(flask_app.name, traefik_app.name)
-
+    await model.add_relation(flask_app.name, traefik_app_name)
     # mypy doesn't see that ActiveStatus has a name
     await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
-    traefik_ip = next(await get_unit_ips(traefik_app.name))
+    traefik_ip = next(await get_unit_ips(traefik_app_name))
     response = requests.get(
         f"http://{traefik_ip}",
         headers={"Host": f"{ops_test.model_name}-{flask_app.name}.{external_hostname}"},
