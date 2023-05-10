@@ -19,7 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class GunicornWebserver:
-    """A class representing a Gunicorn web server."""
+    """A class representing a Gunicorn web server.
+
+    Attrs:
+        command: the command to start the Gunicorn web server.
+
+    """
 
     def __init__(self, charm_state: CharmState, flask_container: Container):
         """Initialize a new instance of the GunicornWebserver class.

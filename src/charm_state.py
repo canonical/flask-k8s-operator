@@ -12,7 +12,15 @@ from charm_types import WebserverConfig
 
 
 class CharmState:
-    """Represents the state of the Flask charm."""
+    """Represents the state of the Flask charm.
+
+    Attrs:
+        webserver_config: the web server configuration file content for the charm.
+        base_dir: the base directory of the Flask application.
+        flask_dir: the path to the Flask directory.
+        flask_wsgi_app_path: the path to the Flask directory.
+        flask_port: the port number to use for the Flask server.
+    """
 
     def __init__(
         self,
