@@ -18,7 +18,7 @@ parts:
       - python3-venv
       - python3-gunicorn
     python-requirements:
-      - sample-app/requirements.txt
+      - requirements.txt
     override-prime: |
       craftctl default
       sed -i 's/include-system-site-packages = false/include-system-site-packages = true/g' "$CRAFT_PRIME/pyvenv.cfg"
@@ -26,6 +26,6 @@ parts:
     plugin: dump
     source: .
     organize:
-      sample-app: srv/flask/app
+      "*": srv/flask/app/
     prime:
       - srv/flask/app
