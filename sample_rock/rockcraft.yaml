@@ -26,6 +26,6 @@ parts:
     plugin: dump
     source: .
     organize:
-      simple-mysql: srv/flask/app
+      sample-app: srv/flask/app
     prime:
       - srv/flask/app
