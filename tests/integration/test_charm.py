@@ -12,7 +12,8 @@ import typing
 import juju
 import pytest
 import requests
-from ops.model import ActiveStatus, Application
+from juju.application import Application
+from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -116,10 +117,13 @@ async def test_invalid_flask_config(flask_app: Application, invalid_configs):
     assert: flask charm should enter the blocked status and the status message should show
         invalid configuration options.
     """
-    assert flask_app.status.name == "blocked"
-    status_message = flask_app.status.message
+    assert flask_app.status == "blocked"
     for invalid_config in invalid_configs:
-        assert invalid_config in status_message
+        assert invalid_config in flask_app.status_message
+    for unit in flask_app.units:
+        assert unit.workload_status == "blocked"
+        for invalid_config in invalid_configs:
+            assert invalid_config in unit.workload_status_message
 
 
 async def test_with_ingress(

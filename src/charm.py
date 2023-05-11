@@ -11,7 +11,7 @@ import typing
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import CharmBase, ConfigChangedEvent
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, Container
+from ops.model import ActiveStatus, BlockedStatus, Container, StatusBase
 
 from charm_state import CharmState
 from consts import FLASK_APP_PORT, FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
@@ -35,7 +35,7 @@ class FlaskCharm(CharmBase):
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
-            self.unit.status = BlockedStatus(exc.msg)
+            self._update_status(BlockedStatus(exc.msg))
             return
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
@@ -52,6 +52,16 @@ class FlaskCharm(CharmBase):
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
+
+    def _update_status(self, status: StatusBase) -> None:
+        """Update the application and unit status.
+
+        Args:
+            status: the desired application and unit status.
+        """
+        self.unit.status = status
+        if self.unit.is_leader():
+            self.app.status = status
 
     def container_can_connect(self) -> bool:
         """Check if the Flask pebble service is connectable.
@@ -93,10 +103,10 @@ class FlaskCharm(CharmBase):
         try:
             self._webserver.update_config(is_webserver_running=is_webserver_running)
         except CharmConfigInvalidError as exc:
-            self.unit.status = BlockedStatus(exc.msg)
+            self._update_status(BlockedStatus(exc.msg))
             return
         container.replan()
-        self.unit.status = ActiveStatus()
+        self._update_status(ActiveStatus())
 
     def flask_layer(self) -> dict:
         """Generate the pebble layer definition for flask application.
