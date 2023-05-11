@@ -16,12 +16,10 @@ parts:
     source: .
     stage-packages:
       - python3-venv
-      - python3-gunicorn
+    python-packages:
+      - gunicorn
     python-requirements:
       - requirements.txt
-    override-prime: |
-      craftctl default
-      sed -i 's/include-system-site-packages = false/include-system-site-packages = true/g' "$CRAFT_PRIME/pyvenv.cfg"
   flask-app:
     plugin: dump
     source: .
