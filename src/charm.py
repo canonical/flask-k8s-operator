@@ -60,6 +60,8 @@ class FlaskCharm(CharmBase):
             relation_name=relation_name,
             database_name=database_name,
         )
+        self.framework.observe(database_requirer.on.database_created, self.config_service)
+        self.framework.observe(self.on[relation_name].relation_broken, self.config_service)
         return database_requirer
 
     def config_service(self, event: ConfigChangedEvent) -> None:
@@ -130,11 +132,9 @@ class FlaskCharm(CharmBase):
                     "override": "replace",
                     "summary": "Flask application service",
                     "command": (
-                        "python3 -m gunicorn --chdir /srv/flask/app app:app"
+                        "/bin/python3 -m gunicorn --chdir /srv/flask/app app:app"
                         f" -b 0.0.0.0:{self._FLASK_APP_PORT}"
                     ),
-                    "user": "flask",
-                    "group": "flask",
                     "startup": "enabled",
                     "environment": self._get_flask_env_config(),
                 }

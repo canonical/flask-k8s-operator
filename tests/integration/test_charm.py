@@ -65,7 +65,6 @@ async def test_with_ingress(
 
 
 async def test_with_mysql(
-    ops_test: OpsTest,
     model: juju.model.Model,
     flask_app: Application,
     get_unit_ips,
@@ -85,5 +84,5 @@ async def test_with_mysql(
 
     for unit_ip in await get_unit_ips(flask_app.name):
         response = requests.get(f"http://{unit_ip}:8000", timeout=5)
-        print(response.text)
         assert response.status_code == 200
+        assert "SUCCESS" in response.text

@@ -38,6 +38,6 @@ def simple_mysql():
         with database.cursor() as cursor:
             sql = "SELECT version()"
             cursor.execute(sql)
-            result = cursor.fetchone()
-            return result
+            cursor.fetchone()
+            return "SUCCESS"
     return "FAIL"
