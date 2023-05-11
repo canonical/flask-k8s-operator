@@ -116,16 +116,17 @@ class CharmState:
         timeout = charm.config.get("webserver_timeout")
         workers = charm.config.get("webserver_workers")
         threads = charm.config.get("webserver_threads")
-        flask_config = {k: v for k, v in charm.config.items() if k.startswith("flask_")}
+        flask_config = {
+            k.removeprefix("flask_"): v for k, v in charm.config.items() if k.startswith("flask_")
+        }
         try:
             valid_flask_config = FlaskConfig(**flask_config)  # type: ignore
         except ValidationError as exc:
             error_fields = set(
-                itertools.chain.from_iterable(str(error["loc"]) for error in exc.errors())
+                itertools.chain.from_iterable(error["loc"] for error in exc.errors())
             )
-            raise CharmConfigInvalidError(
-                f"invalid flask_configuration: {' '.join(error_fields)}"
-            ) from exc
+            error_field_str = " ".join(f"flask_{f}" for f in error_fields)
+            raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
         return cls(
             flask_config=valid_flask_config.dict(exclude_unset=True, exclude_none=True),
             webserver_workers=int(workers) if workers is not None else None,

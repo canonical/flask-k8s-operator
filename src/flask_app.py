@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Provide the FlaskApp class to represent the Flask application."""
+import json
 
 from charm_state import CharmState
 
@@ -28,4 +29,6 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         Returns:
             A dictionary representing the Flask environment variables.
         """
-        return {f"FLASK_{k.upper()}": str(v) for k, v in self._charm_state.flask_config.items()}
+        return {
+            f"FLASK_{k.upper()}": json.dumps(v) for k, v in self._charm_state.flask_config.items()
+        }
