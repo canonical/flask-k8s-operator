@@ -23,6 +23,6 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     assert flask_layer == {
         "override": "replace",
         "summary": "Flask application service",
-        "command": f"/bin/python3 -m gunicorn -c {FLASK_BASE_DIR}/gunicorn.conf.py app:app",
+        "command": f"python3 -m gunicorn -c {FLASK_BASE_DIR}/gunicorn.conf.py app:app",
         "startup": "enabled",
     }

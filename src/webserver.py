@@ -79,7 +79,7 @@ chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
             The command to start the Gunicorn web server.
         """
         return [
-            "/bin/python3",
+            "python3",
             "-m",
             "gunicorn",
             "-c",

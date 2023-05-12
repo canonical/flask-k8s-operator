@@ -20,6 +20,11 @@ parts:
       - gunicorn
     python-requirements:
       - requirements.txt
+    override-prime: |
+      craftctl default
+      # We remove the standard executable to have only /bin/python3 in our PATH
+      # Related to https://github.com/canonical/rockcraft/issues/242
+      rm -f "$CRAFT_PRIME/usr/bin/python3"
   flask-app:
     plugin: dump
     source: .

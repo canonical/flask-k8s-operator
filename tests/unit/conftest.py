@@ -80,7 +80,7 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
         """Handle the python command execution inside the Flask container."""
         match argv:
             case [
-                "/bin/python3",
+                "python3",
                 "-m",
                 "gunicorn",
                 "-c",
@@ -98,7 +98,7 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
 
     inject_register_command_handler(monkeypatch, harness)
     harness.register_command_handler(  # type: ignore # pylint: disable=no-member
-        container=flask_container, executable="/bin/python3", handler=python_cmd_handler
+        container=flask_container, executable="python3", handler=python_cmd_handler
     )
 
     yield harness
