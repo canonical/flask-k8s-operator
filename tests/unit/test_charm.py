@@ -3,7 +3,11 @@
 
 """Flask charm unit tests."""
 
+# pylint: disable=protected-access
+
 from ops.testing import Harness
+
+FLASK_BASE_DIR = "/srv/flask"
 
 
 def test_flask_pebble_layer(harness: Harness) -> None:
@@ -19,6 +23,6 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     assert flask_layer == {
         "override": "replace",
         "summary": "Flask application service",
-        "command": "/bin/python3 -m gunicorn --chdir /srv/flask/app app:app -b 0.0.0.0:8000",
+        "command": f"/bin/python3 -m gunicorn -c {FLASK_BASE_DIR}/gunicorn.conf.py app:app",
         "startup": "enabled",
     }

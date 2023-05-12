@@ -1,3 +1,16 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-options: {}
+options:
+  webserver_workers:
+    type: int
+    description: The number of webserver worker processes for handling requests.
+  webserver_threads:
+    type: int
+    description: >
+      The number of worker threads for handling requests. Run each webserver worker with the specified number of threads.
+  webserver_keepalive:
+    type: int
+    description: The number of seconds for webserver to wait for requests on a Keep-Alive connection.
+  webserver_timeout:
+    type: int
+    description: Webserver workers silent for more than this many seconds are killed and restarted.
