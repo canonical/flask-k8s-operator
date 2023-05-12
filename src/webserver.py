@@ -43,10 +43,7 @@ class GunicornWebserver:
         Returns:
             The content of the Gunicorn configuration file.
         """
-        config_entries = [
-            f"bind = ['0.0.0.0:{self._charm_state.flask_port}']",
-            f"chdir = {repr(str(self._charm_state.flask_dir.absolute()))}",
-        ]
+        config_entries = []
         settings = ("workers", "threads", "keepalive", "timeout")
         for setting in settings:
             setting_value = getattr(self._charm_state.webserver_config, setting)
@@ -58,7 +55,12 @@ class GunicornWebserver:
                 else int(setting_value.total_seconds())
             )
             config_entries.append(f"{setting} = {setting_value}")
-        return "\n".join(config_entries)
+        new_line = "\n"
+        config = f"""\
+bind = ['0.0.0.0:{self._charm_state.flask_port}']
+chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
+{new_line.join(config_entries)}"""
+        return config
 
     @property
     def _config_path(self) -> pathlib.Path:
