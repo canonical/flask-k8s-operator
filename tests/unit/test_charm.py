@@ -2,14 +2,14 @@
 # See LICENSE file for licensing details.
 
 """Flask charm unit tests."""
+
+# pylint: disable=protected-access
+
 import pytest
 from ops.testing import Harness
 
 from charm_state import CharmState
 from exceptions import CharmConfigInvalidError
-
-# pylint: disable=protected-access
-
 
 FLASK_BASE_DIR = "/srv/flask"
 

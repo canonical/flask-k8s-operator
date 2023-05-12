@@ -4,6 +4,7 @@
 
 """Integration tests for Flask charm."""
 
+# caused by pytest fixtures
 # pylint: disable=too-many-arguments
 
 import logging
