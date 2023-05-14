@@ -7,6 +7,7 @@ import json
 import pytest
 
 from charm_state import CharmState
+from consts import FLASK_ENV_CONFIG_PREFIX
 from flask_app import FlaskApp
 
 
@@ -27,5 +28,5 @@ def test_flask_env(flask_config: dict):
     charm_state = CharmState(flask_config=flask_config)
     flask_app = FlaskApp(charm_state=charm_state)
     assert flask_app.flask_environment == {
-        f"FLASK_{k.upper()}": json.dumps(v) for k, v in flask_config.items()
+        f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": json.dumps(v) for k, v in flask_config.items()
     }

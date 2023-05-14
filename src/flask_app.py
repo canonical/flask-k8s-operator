@@ -5,6 +5,7 @@
 import json
 
 from charm_state import CharmState
+from consts import FLASK_ENV_CONFIG_PREFIX
 
 
 class FlaskApp:  # pylint: disable=too-few-public-methods
@@ -30,5 +31,6 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             A dictionary representing the Flask environment variables.
         """
         return {
-            f"FLASK_{k.upper()}": json.dumps(v) for k, v in self._charm_state.flask_config.items()
+            f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": json.dumps(v)
+            for k, v in self._charm_state.flask_config.items()
         }
