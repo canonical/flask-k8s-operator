@@ -14,8 +14,8 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container, StatusBase
 
 from charm_state import CharmState
-from consts import FLASK_APP_PORT, FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
-from exceptions import CharmConfigInvalidError
+from consts import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
+from exceptions import CharmConfigInvalidError, PebbleNotReadyError
 from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
@@ -35,7 +35,7 @@ class FlaskCharm(CharmBase):
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
-            self._update_status(BlockedStatus(exc.msg))
+            self._update_app_and_unit_status(BlockedStatus(exc.msg))
             return
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
@@ -45,7 +45,7 @@ class FlaskCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.ingress = IngressPerAppRequirer(
             self,
-            port=FLASK_APP_PORT,
+            port=self._charm_state.flask_port,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
@@ -53,7 +53,7 @@ class FlaskCharm(CharmBase):
             strip_prefix=True,
         )
 
-    def _update_status(self, status: StatusBase) -> None:
+    def _update_app_and_unit_status(self, status: StatusBase) -> None:
         """Update the application and unit status.
 
         Args:
@@ -78,11 +78,11 @@ class FlaskCharm(CharmBase):
             The controller of the flask application workload container.
 
         Raises:
-            RuntimeError: if the pebble service inside the container is not ready while the
+            PebbleNotReadyError: if the pebble service inside the container is not ready while the
                 ``require_connected`` is set to True.
         """
         if not self.container_can_connect():
-            raise RuntimeError("pebble inside flask-app container is not ready")
+            raise PebbleNotReadyError("pebble inside flask-app container is not ready")
 
         container = self.unit.get_container(FLASK_CONTAINER_NAME)
         return container
@@ -93,20 +93,21 @@ class FlaskCharm(CharmBase):
         Args:
             event: the config-changed event that trigger this callback function.
         """
-        if not self.container_can_connect():
+        try:
+            container = self.container()
+        except PebbleNotReadyError:
+            logger.info("pebble client in the Flask container is not ready, defer config-changed")
             event.defer()
             return
-
-        container = self.container()
         container.add_layer("flask-app", self.flask_layer(), combine=True)
         is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         try:
             self._webserver.update_config(is_webserver_running=is_webserver_running)
         except CharmConfigInvalidError as exc:
-            self._update_status(BlockedStatus(exc.msg))
+            self._update_app_and_unit_status(BlockedStatus(exc.msg))
             return
         container.replan()
-        self._update_status(ActiveStatus())
+        self._update_app_and_unit_status(ActiveStatus())
 
     def flask_layer(self) -> dict:
         """Generate the pebble layer definition for flask application.

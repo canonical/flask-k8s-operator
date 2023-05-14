@@ -18,3 +18,7 @@ class CharmConfigInvalidError(Exception):
             msg (str): Explanation of the error.
         """
         self.msg = msg
+
+
+class PebbleNotReadyError(Exception):
+    """Exception raised when accessing pebble while it isn't ready."""
