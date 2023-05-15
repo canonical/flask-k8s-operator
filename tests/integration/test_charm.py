@@ -47,7 +47,7 @@ async def test_flask_is_up(
 async def test_flask_webserver_timeout(
     flask_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-    timeout,
+    timeout: int,
 ):
     """
     arrange: build and deploy the flask charm, and change the gunicorn timeout configuration.
@@ -79,7 +79,11 @@ async def test_flask_webserver_timeout(
     indirect=["update_config"],
 )
 @pytest.mark.usefixtures("update_config")
-async def test_flask_config(flask_app, get_unit_ips, excepted_config):
+async def test_flask_config(
+    flask_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    excepted_config: dict,
+):
     """
     arrange: build and deploy the flask charm, and change flask related configurations.
     act: query flask configurations from the Flask server.
@@ -110,7 +114,7 @@ async def test_flask_config(flask_app, get_unit_ips, excepted_config):
     indirect=["update_config"],
 )
 @pytest.mark.usefixtures("update_config")
-async def test_invalid_flask_config(flask_app: Application, invalid_configs):
+async def test_invalid_flask_config(flask_app: Application, invalid_configs: typing.Sequence[str]):
     """
     arrange: build and deploy the flask charm, and change flask related configurations
         to certain invalid values.
@@ -137,7 +141,11 @@ async def test_invalid_flask_config(flask_app: Application, invalid_configs):
     indirect=["update_config"],
 )
 @pytest.mark.usefixtures("update_config")
-async def test_app_config(flask_app: Application, excepted_config: dict, get_unit_ips):
+async def test_app_config(
+    flask_app: Application,
+    excepted_config: dict[str, str | int | bool],
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
     """
     arrange: build and deploy the flask charm, and change Flask app configurations.
     act: none.
@@ -157,7 +165,7 @@ async def test_with_ingress(
     flask_app: Application,
     traefik_app_name: str,
     external_hostname: str,
-    get_unit_ips,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
     arrange: build and deploy the flask charm, and deploy the ingress.
