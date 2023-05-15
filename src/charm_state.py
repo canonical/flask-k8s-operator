@@ -37,13 +37,13 @@ class FlaskConfig(BaseModel, extra=Extra.allow):  # pylint: disable=too-few-publ
             context in the Flask application.
     """
 
-    env: str = Field(None, min_length=1)
-    debug: bool = Field(None)
-    secret_key: str = Field(None, min_length=1)
-    permanent_session_lifetime: int = Field(None, gt=0)
-    application_root: str = Field(None, min_length=1)
-    session_cookie_secure: bool = Field(None)
-    preferred_url_scheme: str = Field(None, regex="(?i)^(HTTP|HTTPS)$")
+    env: str | None = Field(None, min_length=1)
+    debug: bool | None = Field(None)
+    secret_key: str | None = Field(None, min_length=1)
+    permanent_session_lifetime: int | None = Field(None, gt=0)
+    application_root: str | None = Field(None, min_length=1)
+    session_cookie_secure: bool | None = Field(None)
+    preferred_url_scheme: str | None = Field(None, regex="(?i)^(HTTP|HTTPS)$")
 
     @validator("preferred_url_scheme")
     @classmethod
@@ -120,6 +120,7 @@ class CharmState:
             k.removeprefix("flask_"): v for k, v in charm.config.items() if k.startswith("flask_")
         }
         try:
+            # typing issue of the pydantic model constructor
             valid_flask_config = FlaskConfig(**flask_config)  # type: ignore
         except ValidationError as exc:
             error_fields = set(
