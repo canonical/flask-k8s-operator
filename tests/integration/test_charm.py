@@ -114,7 +114,7 @@ async def test_flask_config(
     indirect=["update_config"],
 )
 @pytest.mark.usefixtures("update_config")
-async def test_invalid_flask_config(flask_app: Application, invalid_configs: typing.Sequence[str]):
+async def test_invalid_flask_config(flask_app: Application, invalid_configs: tuple[str, ...]):
     """
     arrange: build and deploy the flask charm, and change flask related configurations
         to certain invalid values.
@@ -176,7 +176,7 @@ async def test_with_ingress(
     # mypy doesn't see that ActiveStatus has a name
     await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
-    traefik_ip = next(await get_unit_ips(traefik_app_name))
+    traefik_ip = next(iter(await get_unit_ips(traefik_app_name)))
     response = requests.get(
         f"http://{traefik_ip}",
         headers={"Host": f"{ops_test.model_name}-{flask_app.name}.{external_hostname}"},
