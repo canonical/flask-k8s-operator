@@ -104,8 +104,6 @@ class FlaskCharm(CharmBase):
                     "override": "replace",
                     "summary": "Flask application service",
                     "command": shlex.join(self._webserver.command),
-                    "user": "flask",
-                    "group": "flask",
                     "startup": "enabled",
                 }
             },

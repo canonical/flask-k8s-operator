@@ -11,37 +11,24 @@ platforms:
   amd64:
 
 parts:
-  flask-environment:
-    plugin: nil
-    overlay-script: |
-      mkdir $CRAFT_OVERLAY/etc
-      mkdir $CRAFT_OVERLAY/tmp
-      chmod 755 $CRAFT_OVERLAY/etc
-      chmod 777 $CRAFT_OVERLAY/tmp
-      groupadd -R $CRAFT_OVERLAY --gid 2000 flask
-      useradd -R $CRAFT_OVERLAY --system --gid 2000 --uid 2000 --home /srv/flask flask
   flask-dependencies:
-    stage-packages:
-      - python3-dev
-      - python3-gunicorn
-    build-packages:
-      - build-essential
-      - python3-pip
+    plugin: python
     source: .
-    plugin: nil
-    overlay-script: |
-      mkdir -p $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
-      pip install -r $CRAFT_PART_SRC_WORK/sample-app/requirements.txt --target $CRAFT_OVERLAY/srv/flask/.local/lib/python3.10/site-packages
-      chown 2000:2000 -R $CRAFT_OVERLAY/srv/flask/
+    stage-packages:
+      - python3-venv
+    python-packages:
+      - gunicorn
+    python-requirements:
+      - requirements.txt
+    override-prime: |
+      craftctl default
+      # We remove the standard executable to have only /bin/python3 in our PATH
+      # Related to https://github.com/canonical/rockcraft/issues/242
+      rm -f "$CRAFT_PRIME/usr/bin/python3"
   flask-app:
     plugin: dump
     source: .
     organize:
-      sample-app: srv/flask/app
+      "*": srv/flask/app/
     prime:
       - srv/flask/app
-    permissions:
-      - owner: 2000
-        group: 2000
-      - path: srv/flask/
-        mode: 755

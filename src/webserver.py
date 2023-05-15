@@ -117,7 +117,7 @@ chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
             ExecResult: An `ExecResult` object representing the result of the command execution.
         """
         container = self._flask_container
-        exec_process = container.exec(command, user="flask", group="flask")
+        exec_process = container.exec(command)
         try:
             stdout, stderr = exec_process.wait_output()
             return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
