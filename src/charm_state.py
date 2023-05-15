@@ -8,6 +8,7 @@ import itertools
 import pathlib
 
 from ops.charm import CharmBase
+# pydantic is causing this no-name-in-module problem
 from pydantic import (  # pylint: disable=no-name-in-module
     BaseModel,
     Extra,
