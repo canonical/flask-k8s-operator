@@ -30,7 +30,8 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         Returns:
             A dictionary representing the Flask environment variables.
         """
+        flask_env = self._charm_state.app_config
+        flask_env.update(self._charm_state.flask_config)
         return {
-            f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": json.dumps(v)
-            for k, v in self._charm_state.flask_config.items()
+            f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": json.dumps(v) for k, v in flask_env.items()
         }

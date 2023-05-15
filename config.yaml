@@ -21,31 +21,31 @@ options:
     description: Whether Flask debug mode is enabled.
   flask_secret_key:
     type: string
-    description: >
+    description: >-
       A secret key used for securely signing the session cookie and  for any other security related needs by your 
       Flask application. This configuration will set the FLASK_SECRET_KEY environment variable.
       Run `app.config.from_prefixed_env()` in your Flask application in order to receive this configuration.
   flask_permanent_session_lifetime:
     type: int
-    description: >
+    description: >-
       Time in seconds for the cookie to expire in the Flask application permanent sessions. This configuration 
       will set the FLASK_PERMANENT_SESSION_LIFETIME environment variable. Run `app.config.from_prefixed_env()` 
       in your Flask application in order to receive this configuration.
   flask_application_root:
     type: string
-    description: >
+    description: >-
       Path in which the application / web server is mounted. This configuration will set the FLASK_APPLICATION_ROOT 
       environment variable. Run `app.config.from_prefixed_env()` in your Flask application in order to receive 
       this configuration.
   flask_session_cookie_secure:
     type: boolean
-    description: >
+    description: >-
       Set the secure attribute in the Flask application cookies. This configuration will set the 
       FLASK_SESSION_COOKIE_SECURE environment variable. Run `app.config.from_prefixed_env()` in your Flask application
       in order to receive this configuration.
   flask_preferred_url_scheme:
     type: string
-    description: >
+    description: >-
       Scheme for generating external URLs when not in a request context in the Flask application. By default,
       it's "HTTP" This configuration will set the FLASK_PREFERRED_URL_SCHEME environment variable. 
       Run `app.config.from_prefixed_env()` in your Flask application in order to receive this configuration.

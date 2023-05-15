@@ -4,10 +4,13 @@
 """Fixtures for flask charm integration tests."""
 
 import asyncio
+import io
 import json
+import zipfile
 
 import pytest
 import pytest_asyncio
+import yaml
 from juju.application import Application
 from juju.model import Model
 from pytest import Config, FixtureRequest
@@ -33,9 +36,45 @@ def traefik_app_name_fixture() -> str:
     return "traefik-k8s"
 
 
+@pytest_asyncio.fixture(scope="module", name="build_charm")
+async def build_charm_fixture(ops_test) -> str:
+    """Builds the charm and injects additional configurations into config.yaml.
+
+    This fixture is designed to simulate a feature that is not yet available in charmcraft that
+    allows for the modification of charm configurations during the build process.
+    Three additional configurations, namely flask_foo_str, flask_foo_int, and flask_foo_bool,
+    will be appended to the config.yaml file.
+    """
+    charm = await ops_test.build_charm(".")
+    charm_zip = zipfile.ZipFile(charm, "r")
+    with charm_zip.open("config.yaml") as file:
+        config = yaml.safe_load(file)
+    config["options"].update(
+        {
+            "flask_foo_str": {"type": "string"},
+            "flask_foo_int": {"type": "int"},
+            "flask_foo_bool": {"type": "boolean"},
+        }
+    )
+    modified_config = yaml.safe_dump(config)
+    new_charm = io.BytesIO()
+    with zipfile.ZipFile(new_charm, "w") as new_charm_zip:
+        for item in charm_zip.infolist():
+            if item.filename == "config.yaml":
+                new_charm_zip.writestr(item, modified_config)
+            else:
+                with charm_zip.open(item) as file:
+                    data = file.read()
+                new_charm_zip.writestr(item, data)
+    charm_zip.close()
+    with open(charm, "wb") as charm_file:
+        charm_file.write(new_charm.getvalue())
+    return charm
+
+
 @pytest_asyncio.fixture(scope="module", name="flask_app")
 async def flask_app_fixture(
-    ops_test: OpsTest,
+    build_charm: str,
     model: Model,
     pytestconfig: Config,
     external_hostname: str,
@@ -43,10 +82,10 @@ async def flask_app_fixture(
 ):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
-    charm = await ops_test.build_charm(".")
+
     resources = {"flask-app-image": pytestconfig.getoption("--flask-app-image")}
     deploy_result = await asyncio.gather(
-        model.deploy(charm, resources=resources, application_name=app_name, series="jammy"),
+        model.deploy(build_charm, resources=resources, application_name=app_name, series="jammy"),
         model.deploy(
             "traefik-k8s",
             application_name=traefik_app_name,

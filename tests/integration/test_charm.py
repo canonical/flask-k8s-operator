@@ -127,6 +127,30 @@ async def test_invalid_flask_config(flask_app: Application, invalid_configs):
             assert invalid_config in unit.workload_status_message
 
 
+@pytest.mark.parametrize(
+    "update_config, excepted_config",
+    [
+        pytest.param({"flask_foo_str": "testing"}, {"FOO_STR": "testing"}, id="str"),
+        pytest.param({"flask_foo_int": 128}, {"FOO_INT": 128}, id="int"),
+        pytest.param({"flask_foo_bool": True}, {"FOO_BOOL": True}, id="bool"),
+    ],
+    indirect=["update_config"],
+)
+@pytest.mark.usefixtures("update_config")
+async def test_app_config(flask_app: Application, excepted_config: dict, get_unit_ips):
+    """
+    arrange: build and deploy the flask charm, and change Flask app configurations.
+    act: none.
+    assert: Flask application should receive the application configuration correctly.
+    """
+    for unit_ip in await get_unit_ips(flask_app.name):
+        for config_key, config_value in excepted_config.items():
+            assert (
+                requests.get(f"http://{unit_ip}:8000/config/{config_key}", timeout=10).json()
+                == config_value
+            )
+
+
 async def test_with_ingress(
     ops_test: OpsTest,
     model: juju.model.Model,
