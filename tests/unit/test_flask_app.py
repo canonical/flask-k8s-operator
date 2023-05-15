@@ -7,8 +7,7 @@ import json
 import pytest
 
 from charm_state import CharmState
-from consts import FLASK_ENV_CONFIG_PREFIX
-from flask_app import FlaskApp
+from flask_app import FLASK_ENV_CONFIG_PREFIX, FlaskApp
 
 
 @pytest.mark.parametrize(

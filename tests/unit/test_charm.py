@@ -6,7 +6,7 @@
 import yaml
 from ops.testing import Harness
 
-from consts import KNOWN_CHARM_CONFIG
+from charm_state import KNOWN_CHARM_CONFIG
 
 FLASK_BASE_DIR = "/srv/flask"
 
