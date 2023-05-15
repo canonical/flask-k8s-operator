@@ -23,6 +23,4 @@ def test_flask_pebble_layer(harness: Harness) -> None:
         "summary": "Flask application service",
         "command": f"python3 -m gunicorn -c {FLASK_BASE_DIR}/gunicorn.conf.py app:app",
         "startup": "enabled",
-        "user": "flask",
-        "group": "flask",
     }

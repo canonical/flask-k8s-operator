@@ -122,8 +122,6 @@ class FlaskCharm(CharmBase):
                     "summary": "Flask application service",
                     "command": shlex.join(self._webserver.command),
                     "environment": self._flask_app.flask_environment,
-                    "user": "flask",
-                    "group": "flask",
                     "startup": "enabled",
                 }
             },
