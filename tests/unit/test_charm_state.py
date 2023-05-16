@@ -13,9 +13,17 @@ from exceptions import CharmConfigInvalidError
 @pytest.mark.parametrize(
     "charm_config, flask_config",
     [
-        pytest.param({"flask_env": "prod"}, {"env": "prod"}, id="env"),
-        pytest.param({"flask_debug": True}, {"debug": True}, id="debug"),
-        pytest.param({"flask_secret_key": "1234"}, {"secret_key": "1234"}, id="secret_key"),
+        pytest.param(
+            {"flask_env": "prod"}, {"env": "prod", "preferred_url_scheme": "HTTPS"}, id="env"
+        ),
+        pytest.param(
+            {"flask_debug": True}, {"debug": True, "preferred_url_scheme": "HTTPS"}, id="debug"
+        ),
+        pytest.param(
+            {"flask_secret_key": "1234"},
+            {"secret_key": "1234", "preferred_url_scheme": "HTTPS"},
+            id="secret_key",
+        ),
         pytest.param(
             {"flask_preferred_url_scheme": "http"},
             {"preferred_url_scheme": "HTTP"},
