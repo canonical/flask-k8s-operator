@@ -5,21 +5,25 @@
 """Flask Charm service."""
 
 import logging
+import shlex
 import typing
 
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.charm import CharmBase, ConfigChangedEvent
 from ops.main import main
-from ops.model import ActiveStatus
+from ops.model import ActiveStatus, BlockedStatus, Container
+
+from charm_state import CharmState
+from consts import FLASK_APP_PORT, FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
+from exceptions import WebserverConfigInvalidError
+from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
 
 
 class FlaskCharm(CharmBase):
     """Flask Charm service."""
-
-    _FLASK_APP_PORT = 8000
 
     def __init__(self, *args: typing.Any) -> None:
         """Initialize the instance.
@@ -28,10 +32,15 @@ class FlaskCharm(CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self.framework.observe(self.on.config_changed, self.config_service)
+        self._charm_state = CharmState.from_charm(charm=self)
+        self._webserver = GunicornWebserver(
+            charm_state=self._charm_state,
+            flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
+        )
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.ingress = IngressPerAppRequirer(
             self,
-            port=self._FLASK_APP_PORT,
+            port=FLASK_APP_PORT,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
@@ -60,21 +69,52 @@ class FlaskCharm(CharmBase):
             relation_name=relation_name,
             database_name=database_name,
         )
-        self.framework.observe(database_requirer.on.database_created, self.config_service)
-        self.framework.observe(self.on[relation_name].relation_broken, self.config_service)
+        self.framework.observe(database_requirer.on.database_created, self._on_config_changed)
+        self.framework.observe(self.on[relation_name].relation_broken, self._on_config_changed)
         return database_requirer
 
-    def config_service(self, event: ConfigChangedEvent) -> None:
+    def container_can_connect(self) -> bool:
+        """Check if the Flask pebble service is connectable.
+
+        Returns:
+            True if the Flask pebble service is connectable, False otherwise.
+        """
+        return self.unit.get_container(FLASK_CONTAINER_NAME).can_connect()
+
+    def container(self) -> Container:
+        """Get the flask application workload container controller.
+
+        Return:
+            The controller of the flask application workload container.
+
+        Raises:
+            RuntimeError: if the pebble service inside the container is not ready while the
+                ``require_connected`` is set to True.
+        """
+        if not self.container_can_connect():
+            raise RuntimeError("pebble inside flask-app container is not ready")
+
+        container = self.unit.get_container(FLASK_CONTAINER_NAME)
+        return container
+
+    def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
 
         Args:
             event: the config-changed event that trigger this callback function.
         """
-        container = self.unit.get_container("flask-app")
-        if not container.can_connect():
+        if not self.container_can_connect():
             event.defer()
             return
-        container.add_layer("flask-app", self._flask_layer(), combine=True)
+
+        container = self.container()
+        container.add_layer("flask-app", self.flask_layer(), combine=True)
+        is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
+        try:
+            self._webserver.update_config(is_webserver_running=is_webserver_running)
+        except WebserverConfigInvalidError as exc:
+            self.unit.status = BlockedStatus(exc.msg)
+            return
         container.replan()
         self.unit.status = ActiveStatus()
 
@@ -107,7 +147,7 @@ class FlaskCharm(CharmBase):
 
         database_name = data.get("database", self.database_requirer.database)
         endpoint = data["endpoints"].split(",")[0]
-        return f"mysql://{data['username']}:{data['password']}:{endpoint}/{database_name}"
+        return f"mysql://{data['username']}:{data['password']}@{endpoint}/{database_name}"
 
     def _get_flask_env_config(self) -> dict[str, str]:
         """Return an envConfig with some core configuration.
@@ -120,7 +160,7 @@ class FlaskCharm(CharmBase):
         }
         return env_config
 
-    def _flask_layer(self) -> dict:
+    def flask_layer(self) -> dict:
         """Generate the pebble layer definition for flask application.
 
         Returns:
@@ -131,10 +171,7 @@ class FlaskCharm(CharmBase):
                 "flask-app": {
                     "override": "replace",
                     "summary": "Flask application service",
-                    "command": (
-                        "/bin/python3 -m gunicorn --chdir /srv/flask/app app:app"
-                        f" -b 0.0.0.0:{self._FLASK_APP_PORT}"
-                    ),
+                    "command": shlex.join(self._webserver.command),
                     "startup": "enabled",
                     "environment": self._get_flask_env_config(),
                 }

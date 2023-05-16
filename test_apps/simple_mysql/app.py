@@ -41,3 +41,8 @@ def simple_mysql():
             cursor.fetchone()
             return "SUCCESS"
     return "FAIL"
+
+
+@app.route("/env")
+def simple_mysql_env():
+    return app.config.get("DATABASE_URI")

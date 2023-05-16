@@ -1,8 +1,8 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: flask-app
-summary: A flask hello world app
-description: OCI image for the hello world flask app
+name: simple-postgresql
+summary: A flask sample app
+description: OCI image for the sample flask app
 version: "0.1"
 base: bare
 build-base: ubuntu:22.04
@@ -16,8 +16,15 @@ parts:
     source: .
     stage-packages:
       - python3-venv
+    python-packages:
+      - gunicorn
     python-requirements:
       - requirements.txt
+    override-prime: |
+      craftctl default
+      # We remove the standard executable to have only /bin/python3 in our PATH
+      # Related to https://github.com/canonical/rockcraft/issues/242
+      rm -f "$CRAFT_PRIME/usr/bin/python3"
   flask-app:
     plugin: dump
     source: .
