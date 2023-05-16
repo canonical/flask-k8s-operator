@@ -13,7 +13,7 @@ from ops.pebble import ExecError, PathError
 from charm_state import CharmState
 from charm_types import ExecResult
 from consts import FLASK_SERVICE_NAME
-from exceptions import WebserverConfigInvalidError
+from exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
             is_webserver_running: Indicates if the web server container is currently running.
 
         Raises:
-            WebserverConfigInvalidError: If the web server configuration check fails.
+            CharmConfigInvalidError: If the web server configuration check fails.
         """
         webserver_config_path = str(self._config_path)
         try:
@@ -150,7 +150,7 @@ chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
                 config_check_result.stdout,
                 config_check_result.stderr,
             )
-            raise WebserverConfigInvalidError(
+            raise CharmConfigInvalidError(
                 "Webserver configuration check failed, please review your charm configuration"
             )
         if is_webserver_running:

@@ -13,7 +13,8 @@ import typing
 import juju
 import pytest
 import requests
-from ops.model import ActiveStatus, Application
+from juju.application import Application
+from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,68 @@ async def test_flask_webserver_timeout(
             requests.get(
                 f"http://{unit_ip}:8000/sleep?duration={timeout + 1}", timeout=safety_timeout
             )
+
+
+@pytest.mark.parametrize(
+    "update_config, excepted_config",
+    [
+        pytest.param({"flask_env": "testing"}, {"ENV": "testing"}, id="env"),
+        pytest.param(
+            {"flask_permanent_session_lifetime": 100},
+            {"PERMANENT_SESSION_LIFETIME": 100},
+            id="permanent_session_lifetime",
+        ),
+        pytest.param({"flask_debug": True}, {"DEBUG": True}, id="debug"),
+    ],
+    indirect=["update_config"],
+)
+@pytest.mark.usefixtures("update_config")
+async def test_flask_config(flask_app, get_unit_ips, excepted_config):
+    """
+    arrange: build and deploy the flask charm, and change flask related configurations.
+    act: query flask configurations from the Flask server.
+    assert: the flask configuration should match flask related charm configurations.
+    """
+    for unit_ip in await get_unit_ips(flask_app.name):
+        for config_key, config_value in excepted_config.items():
+            assert (
+                requests.get(f"http://{unit_ip}:8000/config/{config_key}", timeout=10).json()
+                == config_value
+            )
+
+
+@pytest.mark.parametrize(
+    "update_config, invalid_configs",
+    [
+        pytest.param(
+            {"flask_permanent_session_lifetime": -1},
+            ("permanent_session_lifetime",),
+            id="permanent_session_lifetime",
+        ),
+        pytest.param(
+            {"flask_preferred_url_scheme": "TLS"},
+            ("preferred_url_scheme",),
+            id="preferred_url_scheme",
+        ),
+    ],
+    indirect=["update_config"],
+)
+@pytest.mark.usefixtures("update_config")
+async def test_invalid_flask_config(flask_app: Application, invalid_configs):
+    """
+    arrange: build and deploy the flask charm, and change flask related configurations
+        to certain invalid values.
+    act: none.
+    assert: flask charm should enter the blocked status and the status message should show
+        invalid configuration options.
+    """
+    assert flask_app.status == "blocked"
+    for invalid_config in invalid_configs:
+        assert invalid_config in flask_app.status_message
+    for unit in flask_app.units:
+        assert unit.workload_status == "blocked"
+        for invalid_config in invalid_configs:
+            assert invalid_config in unit.workload_status_message
 
 
 async def test_with_ingress(
