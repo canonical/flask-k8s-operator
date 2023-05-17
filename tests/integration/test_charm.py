@@ -176,7 +176,7 @@ async def test_with_ingress(
     # mypy doesn't see that ActiveStatus has a name
     await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
-    traefik_ip = next(iter(await get_unit_ips(traefik_app_name)))
+    traefik_ip = (await get_unit_ips(traefik_app_name))[0]
     response = requests.get(
         f"http://{traefik_ip}",
         headers={"Host": f"{ops_test.model_name}-{flask_app.name}.{external_hostname}"},
