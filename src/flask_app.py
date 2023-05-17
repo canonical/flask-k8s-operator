@@ -5,7 +5,7 @@
 import json
 
 from charm_state import CharmState
-from consts import FLASK_ENV_CONFIG_PREFIX
+from constants import FLASK_ENV_CONFIG_PREFIX
 
 
 class FlaskApp:  # pylint: disable=too-few-public-methods
@@ -35,6 +35,3 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         return {
             f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": json.dumps(v) for k, v in flask_env.items()
         }
-
-
-FLASK_ENV_CONFIG_PREFIX = "FLASK_"

@@ -14,7 +14,7 @@ from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container, StatusBase
 
 from charm_state import CharmState
-from consts import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
+from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
 from exceptions import CharmConfigInvalidError, PebbleNotReadyError
 from flask_app import FlaskApp
 from webserver import GunicornWebserver

@@ -9,13 +9,6 @@ import pathlib
 import typing
 
 from ops.charm import CharmBase
-from pydantic import (  # pylint: disable=no-name-in-module
-    BaseModel,
-    Extra,
-    Field,
-    ValidationError,
-    validator,
-)
 
 # pydantic is causing this no-name-in-module problem
 from pydantic import (  # pylint: disable=no-name-in-module

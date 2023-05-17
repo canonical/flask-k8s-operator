@@ -12,7 +12,7 @@ from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 from charm_types import ExecResult
-from consts import FLASK_SERVICE_NAME
+from constants import FLASK_SERVICE_NAME
 from exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)

@@ -45,6 +45,7 @@ options:
       in order to receive this configuration.
   flask_preferred_url_scheme:
     type: string
+    default: HTTPS
     description: >-
       Scheme for generating external URLs when not in a request context in the Flask application. By default,
       it's "HTTP". This configuration will set the FLASK_PREFERRED_URL_SCHEME environment variable. 
