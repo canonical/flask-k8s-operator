@@ -15,8 +15,8 @@ app.config.from_prefixed_env()
 def get_mysql_database():
     """Get the mysql db connection."""
     if "mysql_db" not in g:
-        if app.config.get("MYSQL_DB_CONNECT_URI"):
-            uri_parts = urlparse(app.config["MYSQL_DB_CONNECT_URI"])
+        if app.config.get("MYSQL_DB_CONNECT_STRING"):
+            uri_parts = urlparse(app.config["MYSQL_DB_CONNECT_STRING"])
             g.database = pymysql.connect(
                 host=uri_parts.hostname,
                 user=uri_parts.username,
@@ -32,8 +32,8 @@ def get_mysql_database():
 def get_postgresql_database():
     """Get the postgresql db connection."""
     if "postgresql_db" not in g:
-        if app.config.get("POSTGRESQL_DB_CONNECT_URI"):
-            uri_parts = urlparse(app.config["POSTGRESQL_DB_CONNECT_URI"])
+        if app.config.get("POSTGRESQL_DB_CONNECT_STRING"):
+            uri_parts = urlparse(app.config["POSTGRESQL_DB_CONNECT_STRING"])
             g.database = psycopg.connect(
                 host=uri_parts.hostname,
                 user=uri_parts.username,
@@ -85,7 +85,7 @@ def mysql_status():
 @app.route("/mysql/env")
 def mysql_env():
     """Mysql env endpoint."""
-    return app.config.get("MYSQL_DB_CONNECT_URI")
+    return app.config.get("MYSQL_DB_CONNECT_STRING")
 
 
 @app.route("/postgresql/status")
@@ -103,4 +103,4 @@ def postgresql_status():
 @app.route("/postgresql/env")
 def postgresql_env():
     """Postgresql env endpoint."""
-    return app.config.get("MYSQL_DB_CONNECT_URI")
+    return app.config.get("POSTGRESQL_DB_CONNECT_STRING")

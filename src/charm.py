@@ -167,7 +167,7 @@ class FlaskCharm(CharmBase):
         env_config: typing.Dict[str, str] = {}
         env_config.update(
             {
-                f"FLASK_{db_name}_DB_CONNECT_STRING": db_uri
+                f"FLASK_{db_name.upper()}_DB_CONNECT_STRING": db_uri
                 for (db_name, db_uri) in self._database_uri().items()
             }
         )
