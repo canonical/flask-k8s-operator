@@ -5,6 +5,7 @@
 import json
 
 from charm_state import CharmState
+from consts import FLASK_ENV_CONFIG_PREFIX
 
 
 class FlaskApp:  # pylint: disable=too-few-public-methods

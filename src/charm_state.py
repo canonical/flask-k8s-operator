@@ -17,6 +17,15 @@ from pydantic import (  # pylint: disable=no-name-in-module
     validator,
 )
 
+# pydantic is causing this no-name-in-module problem
+from pydantic import (  # pylint: disable=no-name-in-module
+    BaseModel,
+    Extra,
+    Field,
+    ValidationError,
+    validator,
+)
+
 from charm_types import WebserverConfig
 from exceptions import CharmConfigInvalidError
 
@@ -38,13 +47,13 @@ class FlaskConfig(BaseModel, extra=Extra.allow):  # pylint: disable=too-few-publ
             context in the Flask application.
     """
 
-    env: str = Field(None, min_length=1)
-    debug: bool = Field(None)
-    secret_key: str = Field(None, min_length=1)
-    permanent_session_lifetime: int = Field(None, gt=0)
-    application_root: str = Field(None, min_length=1)
-    session_cookie_secure: bool = Field(None)
-    preferred_url_scheme: str = Field(None, regex="(?i)^(HTTP|HTTPS)$")
+    env: str | None = Field(None, min_length=1)
+    debug: bool | None = Field(None)
+    secret_key: str | None = Field(None, min_length=1)
+    permanent_session_lifetime: int | None = Field(None, gt=0)
+    application_root: str | None = Field(None, min_length=1)
+    session_cookie_secure: bool | None = Field(None)
+    preferred_url_scheme: str | None = Field(None, regex="(?i)^(HTTP|HTTPS)$")
 
     @validator("preferred_url_scheme")
     @classmethod
