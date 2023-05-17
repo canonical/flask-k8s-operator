@@ -47,9 +47,10 @@ class FlaskCharm(CharmBase):
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
-        self.database_requirer: DatabaseRequires = self._setup_database_requirer(
-            "database", "flask-app"
-        )
+        self.databases: typing.Dict[str, DatabaseRequires] = {
+            name: self._setup_database_requirer(name, "flask-app")
+            for name in ("mysql", "postgresql")
+        }
 
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:
         """Set up a DatabaseRequires instance.
@@ -118,36 +119,44 @@ class FlaskCharm(CharmBase):
         container.replan()
         self.unit.status = ActiveStatus()
 
-    def _database_uri(self) -> str:
+    def _database_uri(self) -> typing.Dict[str, str]:
         """Compute DatabaseURI and return it.
 
         Returns:
             DatabaseURI containing details about the data provider integration
         """
+        db_uris: typing.Dict[str, str] = {}
+
         # the database_requirer could not be defined
         # if _database_uri() is called before its initialization
-        if not hasattr(self, "database_requirer") or not self.database_requirer:
-            return ""
+        if not hasattr(self, "databases") or not self.databases:
+            return db_uris
 
-        relations_data = list(self.database_requirer.fetch_relation_data().values())
+        for database, db_requires in self.databases.items():
+            relation_data = list(db_requires.fetch_relation_data().values())
 
-        if not relations_data:
-            logger.warning("No relation data from database provider")
-            return ""
+            if not relation_data:
+                continue
 
-        # There can be only one database integrated at a time
-        # see: metadata.yaml
-        data = relations_data[0]
+            # There can be only one database integrated at a time
+            # see: metadata.yaml
+            data = relation_data[0]
 
-        # Let's check that the relation data is well formed according to the following json_schema:
-        # https://github.com/canonical/charm-relation-interfaces/blob/main/interfaces/mysql_client/v0/schemas/provider.json
-        if not all(data.get(key) for key in ("endpoints", "username", "password")):
-            logger.warning("Incorrect relation data from the data provider: %s", data)
-            return ""
+            # Check that the relation data is well formed according to the following json_schema:
+            # https://github.com/canonical/charm-relation-interfaces/blob/main/interfaces/mysql_client/v0/schemas/provider.json
+            if not all(data.get(key) for key in ("endpoints", "username", "password")):
+                logger.warning("Incorrect relation data from the data provider: %s", data)
+                continue
 
-        database_name = data.get("database", self.database_requirer.database)
-        endpoint = data["endpoints"].split(",")[0]
-        return f"mysql://{data['username']}:{data['password']}@{endpoint}/{database_name}"
+            database_name = data.get("database", db_requires.database)
+            endpoint = data["endpoints"].split(",")[0]
+            db_uris[database] = (
+                f"{database}://"
+                f"{data['username']}:{data['password']}"
+                f"@{endpoint}/{database_name}"
+            )
+
+        return db_uris
 
     def _get_flask_env_config(self) -> dict[str, str]:
         """Return an envConfig with some core configuration.
@@ -155,9 +164,13 @@ class FlaskCharm(CharmBase):
         Returns:
             Dictionary with the environment variables for the container.
         """
-        env_config: dict[str, str] = {
-            "FLASK_DATABASE_URI": self._database_uri(),
-        }
+        env_config: typing.Dict[str, str] = {}
+        env_config.update(
+            {
+                f"FLASK_{db_name}_DB_CONNECT_STRING": db_uri
+                for (db_name, db_uri) in self._database_uri().items()
+            }
+        )
         return env_config
 
     def flask_layer(self) -> dict:
