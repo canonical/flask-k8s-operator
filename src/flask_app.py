@@ -27,6 +27,14 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
     def flask_environment(self) -> dict[str, str]:
         """Generate a Flask environment dictionary from the charm Flask configurations.
 
+        The Flask environment generation follows these rules:
+            1. User-defined configuration cannot overwrite built-in Flask configurations, even if
+                the built-in Flask configuration value is None (undefined).
+            2. Boolean and integer-typed configuration values will be JSON encoded before
+                being passed to Flask.
+            3. String-typed configuration values will be passed to Flask as environment variables
+                directly.
+
         Returns:
             A dictionary representing the Flask environment variables.
         """

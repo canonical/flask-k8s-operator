@@ -23,17 +23,17 @@ from charm_types import WebserverConfig
 from exceptions import CharmConfigInvalidError
 
 KNOWN_CHARM_CONFIG = (
-    "webserver_workers",
-    "webserver_threads",
-    "webserver_keepalive",
-    "webserver_timeout",
-    "flask_env",
-    "flask_debug",
-    "flask_secret_key",
-    "flask_permanent_session_lifetime",
     "flask_application_root",
-    "flask_session_cookie_secure",
+    "flask_debug",
+    "flask_env",
+    "flask_permanent_session_lifetime",
     "flask_preferred_url_scheme",
+    "flask_secret_key",
+    "flask_session_cookie_secure",
+    "webserver_keepalive",
+    "webserver_threads",
+    "webserver_timeout",
+    "webserver_workers",
 )
 
 
