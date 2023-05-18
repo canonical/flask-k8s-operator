@@ -22,6 +22,20 @@ from pydantic import (  # pylint: disable=no-name-in-module
 from charm_types import WebserverConfig
 from exceptions import CharmConfigInvalidError
 
+KNOWN_CHARM_CONFIG = (
+    "webserver_workers",
+    "webserver_threads",
+    "webserver_keepalive",
+    "webserver_timeout",
+    "flask_env",
+    "flask_debug",
+    "flask_secret_key",
+    "flask_permanent_session_lifetime",
+    "flask_application_root",
+    "flask_session_cookie_secure",
+    "flask_preferred_url_scheme",
+)
+
 
 class FlaskConfig(BaseModel, extra=Extra.allow):  # pylint: disable=too-few-public-methods
     """Represent Flask builtin configuration values.
@@ -128,11 +142,7 @@ class CharmState:
             for k, v in charm.config.items()
             if k.startswith("flask_") and k in KNOWN_CHARM_CONFIG
         }
-        app_config = {
-            k.removeprefix("flask_"): v
-            for k, v in charm.config.items()
-            if k.startswith("flask_") and k not in KNOWN_CHARM_CONFIG
-        }
+        app_config = {k: v for k, v in charm.config.items() if k not in KNOWN_CHARM_CONFIG}
         try:
             valid_flask_config = FlaskConfig(**flask_config)  # type: ignore
         except ValidationError as exc:
@@ -223,18 +233,3 @@ class CharmState:
             The port number to use for the Flask server.
         """
         return 8000
-
-
-KNOWN_CHARM_CONFIG = (
-    "webserver_workers",
-    "webserver_threads",
-    "webserver_keepalive",
-    "webserver_timeout",
-    "flask_env",
-    "flask_debug",
-    "flask_secret_key",
-    "flask_permanent_session_lifetime",
-    "flask_application_root",
-    "flask_session_cookie_secure",
-    "flask_preferred_url_scheme",
-)

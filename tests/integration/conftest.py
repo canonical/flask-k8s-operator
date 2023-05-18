@@ -42,8 +42,8 @@ async def build_charm_fixture(ops_test) -> str:
 
     This fixture is designed to simulate a feature that is not yet available in charmcraft that
     allows for the modification of charm configurations during the build process.
-    Three additional configurations, namely flask_foo_str, flask_foo_int, and flask_foo_bool,
-    will be appended to the config.yaml file.
+    Three additional configurations, namely foo_str, foo_int, foo_dict, foo_bool,
+    and application_root will be appended to the config.yaml file.
     """
     charm = await ops_test.build_charm(".")
     charm_zip = zipfile.ZipFile(charm, "r")
@@ -51,9 +51,11 @@ async def build_charm_fixture(ops_test) -> str:
         config = yaml.safe_load(file)
     config["options"].update(
         {
-            "flask_foo_str": {"type": "string"},
-            "flask_foo_int": {"type": "int"},
-            "flask_foo_bool": {"type": "boolean"},
+            "foo_str": {"type": "string"},
+            "foo_int": {"type": "int"},
+            "foo_bool": {"type": "boolean"},
+            "foo_dict": {"type": "string"},
+            "application_root": {"type": "string"},
         }
     )
     modified_config = yaml.safe_dump(config)

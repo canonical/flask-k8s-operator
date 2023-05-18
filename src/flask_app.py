@@ -4,7 +4,7 @@
 """Provide the FlaskApp class to represent the Flask application."""
 import json
 
-from charm_state import CharmState
+from charm_state import KNOWN_CHARM_CONFIG, CharmState
 from constants import FLASK_ENV_CONFIG_PREFIX
 
 
@@ -30,8 +30,14 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         Returns:
             A dictionary representing the Flask environment variables.
         """
-        flask_env = self._charm_state.app_config
+        builtin_flask_config = [
+            c.removeprefix("flask_") for c in KNOWN_CHARM_CONFIG if c.startswith("flask_")
+        ]
+        flask_env = {
+            k: v for k, v in self._charm_state.app_config.items() if k not in builtin_flask_config
+        }
         flask_env.update(self._charm_state.flask_config)
         return {
-            f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": json.dumps(v) for k, v in flask_env.items()
+            f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": v if isinstance(v, str) else json.dumps(v)
+            for k, v in flask_env.items()
         }

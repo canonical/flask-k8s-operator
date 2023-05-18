@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Provide the GunicornWebserver class to represent the gunicorn server."""
+import datetime
 import logging
 import pathlib
 import signal
@@ -44,9 +45,8 @@ class GunicornWebserver:
             The content of the Gunicorn configuration file.
         """
         config_entries = []
-        settings = ("workers", "threads", "keepalive", "timeout")
-        for setting in settings:
-            setting_value = getattr(self._charm_state.webserver_config, setting)
+        for setting, setting_value in self._charm_state.webserver_config.items():
+            setting_value = typing.cast(None | int | datetime.timedelta, setting_value)
             if setting_value is None:
                 continue
             setting_value = (

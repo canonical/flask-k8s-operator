@@ -8,7 +8,7 @@ import datetime
 import typing
 
 
-class WebserverConfig(typing.NamedTuple):
+class WebserverConfig(typing.TypedDict):
     """Represent the configuration values for a web server.
 
     Attributes:

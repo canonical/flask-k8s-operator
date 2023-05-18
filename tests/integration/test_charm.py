@@ -3,10 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Flask charm."""
-
-# caused by pytest fixtures
-# pylint: disable=too-many-arguments
-
+import json
 import logging
 import typing
 
@@ -16,6 +13,10 @@ import requests
 from juju.application import Application
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
+
+# caused by pytest fixtures
+# pylint: disable=too-many-arguments
+
 
 logger = logging.getLogger(__name__)
 
@@ -134,9 +135,11 @@ async def test_invalid_flask_config(flask_app: Application, invalid_configs: tup
 @pytest.mark.parametrize(
     "update_config, excepted_config",
     [
-        pytest.param({"flask_foo_str": "testing"}, {"FOO_STR": "testing"}, id="str"),
-        pytest.param({"flask_foo_int": 128}, {"FOO_INT": 128}, id="int"),
-        pytest.param({"flask_foo_bool": True}, {"FOO_BOOL": True}, id="bool"),
+        pytest.param({"foo_str": "testing"}, {"FOO_STR": "testing"}, id="str"),
+        pytest.param({"foo_int": 128}, {"FOO_INT": 128}, id="int"),
+        pytest.param({"foo_bool": True}, {"FOO_BOOL": True}, id="bool"),
+        pytest.param({"foo_dict": json.dumps({"a": 1})}, {"FOO_DICT": {"a": 1}}, id="dict"),
+        pytest.param({"application_root": "/foo"}, {"APPLICATION_ROOT": "/"}, id="builtin"),
     ],
     indirect=["update_config"],
 )
