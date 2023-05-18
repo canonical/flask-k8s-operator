@@ -9,7 +9,7 @@ import shlex
 import typing
 
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
-from ops.charm import CharmBase, ConfigChangedEvent
+from ops.charm import CharmBase, ConfigChangedEvent, PebbleReadyEvent
 from ops.main import main
 from ops.model import ActiveStatus, BlockedStatus, Container, StatusBase
 
@@ -17,6 +17,7 @@ from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
 from exceptions import CharmConfigInvalidError, PebbleNotReadyError
 from flask_app import FlaskApp
+from observability import Observability
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,11 @@ class FlaskCharm(CharmBase):
         )
         self._flask_app = FlaskApp(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.ingress = IngressPerAppRequirer(
+        self.framework.observe(
+            self.on.statsd_prometheus_exporter_pebble_ready,
+            self._on_statsd_prometheus_exporter_pebble_ready,
+        )
+        self._ingress = IngressPerAppRequirer(
             self,
             port=self._charm_state.flask_port,
             # We're forced to use the app's service endpoint
@@ -52,6 +57,7 @@ class FlaskCharm(CharmBase):
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
+        self._observability = Observability(charm=self, charm_state=self._charm_state)
 
     def _update_app_and_unit_status(self, status: StatusBase) -> None:
         """Update the application and unit status.
@@ -87,6 +93,14 @@ class FlaskCharm(CharmBase):
         container = self.unit.get_container(FLASK_CONTAINER_NAME)
         return container
 
+    def _prepare_flask_log_dir(self) -> None:
+        """Prepare Flask access and error log directory for the Flask application."""
+        container = self.container()
+        for log in (self._charm_state.flask_access_log, self._charm_state.flask_error_log):
+            log_dir = str(log.parent.absolute())
+            if not container.isdir(log_dir):
+                container.make_dir(log_dir, make_parents=True)
+
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
 
@@ -99,6 +113,7 @@ class FlaskCharm(CharmBase):
             logger.info("pebble client in the Flask container is not ready, defer config-changed")
             event.defer()
             return
+        self._prepare_flask_log_dir()
         container.add_layer("flask-app", self.flask_layer(), combine=True)
         is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         try:
@@ -126,6 +141,32 @@ class FlaskCharm(CharmBase):
                 }
             },
         }
+
+    def _on_statsd_prometheus_exporter_pebble_ready(self, _event: PebbleReadyEvent) -> None:
+        """Handle the statsd-prometheus-exporter-pebble-ready event."""
+        statsd_container = self.unit.get_container("statsd-prometheus-exporter")
+        statsd_layer = {
+            "summary": "statsd exporter layer",
+            "description": "statsd exporter layer",
+            "services": {
+                "statsd-prometheus-exporter": {
+                    "override": "replace",
+                    "summary": "statsd exporter service",
+                    "user": "nobody",
+                    "command": "/bin/statsd_exporter",
+                    "startup": "enabled",
+                }
+            },
+            "checks": {
+                "container-ready": {
+                    "override": "replace",
+                    "level": "ready",
+                    "http": {"url": "http://localhost:9102/metrics"},
+                },
+            },
+        }
+        statsd_container.add_layer("statsd-prometheus-exporter", statsd_layer, combine=True)
+        statsd_container.replan()
 
 
 if __name__ == "__main__":  # pragma: nocover

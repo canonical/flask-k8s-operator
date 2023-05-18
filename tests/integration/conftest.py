@@ -36,6 +36,24 @@ def traefik_app_name_fixture() -> str:
     return "traefik-k8s"
 
 
+@pytest.fixture(scope="module", name="prometheus_app_name")
+def prometheus_app_name_fixture() -> str:
+    """Return the name of the prometheus application deployed for tests."""
+    return "prometheus-k8s"
+
+
+@pytest.fixture(scope="module", name="loki_app_name")
+def loki_app_name_fixture() -> str:
+    """Return the name of the prometheus application deployed for tests."""
+    return "loki-k8s"
+
+
+@pytest.fixture(scope="module", name="grafana_app_name")
+def grafana_app_name_fixture() -> str:
+    """Return the name of the grafana application deployed for tests."""
+    return "grafana-k8s"
+
+
 @pytest_asyncio.fixture(scope="module", name="build_charm")
 async def build_charm_fixture(ops_test) -> str:
     """Builds the charm and injects additional configurations into config.yaml.
@@ -75,17 +93,23 @@ async def build_charm_fixture(ops_test) -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="flask_app")
-async def flask_app_fixture(
+async def flask_app_fixture(  # pylint: disable=too-many-arguments
     build_charm: str,
     model: Model,
     pytestconfig: Config,
     external_hostname: str,
     traefik_app_name: str,
+    prometheus_app_name: str,
+    loki_app_name: str,
+    grafana_app_name: str,
 ):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
 
-    resources = {"flask-app-image": pytestconfig.getoption("--flask-app-image")}
+    resources = {
+        "flask-app-image": pytestconfig.getoption("--flask-app-image"),
+        "statsd-prometheus-exporter-image": "prom/statsd-exporter",
+    }
     deploy_result = await asyncio.gather(
         model.deploy(build_charm, resources=resources, application_name=app_name, series="jammy"),
         model.deploy(
@@ -98,6 +122,18 @@ async def flask_app_fixture(
             },
         ),
         model.wait_for_idle(apps=[app_name, traefik_app_name], raise_on_blocked=True),
+        model.deploy(
+            "prometheus-k8s",
+            application_name=prometheus_app_name,
+            channel="latest/edge",
+            trust=True,
+        ),
+        model.deploy(
+            "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
+        ),
+        model.deploy(
+            "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
+        ),
     )
     return deploy_result[0]
 

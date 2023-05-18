@@ -59,6 +59,9 @@ class GunicornWebserver:
         config = f"""\
 bind = ['0.0.0.0:{self._charm_state.flask_port}']
 chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
+accesslog = {repr(str(self._charm_state.flask_access_log.absolute()))}
+errorlog = {repr(str(self._charm_state.flask_error_log.absolute()))}
+statsd_host = {repr(self._charm_state.flask_statsd_host)}
 {new_line.join(config_entries)}"""
         return config
 
