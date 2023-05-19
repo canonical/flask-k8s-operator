@@ -24,4 +24,7 @@ header:
     - '**/LICENSE'
     - '**/trivy.yaml'
     - 'lib/charms/**'
+    - 'src/grafana_dashboards/**'
+    - 'src/loki_alert_rules/**'
+    - 'src/prometheus_alert_rules/**'
   comment: on-failure
