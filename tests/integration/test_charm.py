@@ -18,11 +18,6 @@ from pytest_operator.plugin import OpsTest
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
 
-
-# caused by pytest fixtures
-# pylint: disable=too-many-arguments
-
-
 logger = logging.getLogger(__name__)
 
 
