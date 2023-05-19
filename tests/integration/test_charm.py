@@ -3,10 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Flask charm."""
-
-# caused by pytest fixtures
-# pylint: disable=too-many-arguments
-
+import json
 import logging
 import typing
 
@@ -16,6 +13,10 @@ import requests
 from juju.application import Application
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
+
+# caused by pytest fixtures
+# pylint: disable=too-many-arguments
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ async def test_flask_is_up(
 async def test_flask_webserver_timeout(
     flask_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-    timeout,
+    timeout: int,
 ):
     """
     arrange: build and deploy the flask charm, and change the gunicorn timeout configuration.
@@ -79,7 +80,11 @@ async def test_flask_webserver_timeout(
     indirect=["update_config"],
 )
 @pytest.mark.usefixtures("update_config")
-async def test_flask_config(flask_app, get_unit_ips, excepted_config):
+async def test_flask_config(
+    flask_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+    excepted_config: dict,
+):
     """
     arrange: build and deploy the flask charm, and change flask related configurations.
     act: query flask configurations from the Flask server.
@@ -110,7 +115,7 @@ async def test_flask_config(flask_app, get_unit_ips, excepted_config):
     indirect=["update_config"],
 )
 @pytest.mark.usefixtures("update_config")
-async def test_invalid_flask_config(flask_app: Application, invalid_configs):
+async def test_invalid_flask_config(flask_app: Application, invalid_configs: tuple[str, ...]):
     """
     arrange: build and deploy the flask charm, and change flask related configurations
         to certain invalid values.
@@ -127,13 +132,43 @@ async def test_invalid_flask_config(flask_app: Application, invalid_configs):
             assert invalid_config in unit.workload_status_message
 
 
+@pytest.mark.parametrize(
+    "update_config, excepted_config",
+    [
+        pytest.param({"foo_str": "testing"}, {"FOO_STR": "testing"}, id="str"),
+        pytest.param({"foo_int": 128}, {"FOO_INT": 128}, id="int"),
+        pytest.param({"foo_bool": True}, {"FOO_BOOL": True}, id="bool"),
+        pytest.param({"foo_dict": json.dumps({"a": 1})}, {"FOO_DICT": {"a": 1}}, id="dict"),
+        pytest.param({"application_root": "/foo"}, {"APPLICATION_ROOT": "/"}, id="builtin"),
+    ],
+    indirect=["update_config"],
+)
+@pytest.mark.usefixtures("update_config")
+async def test_app_config(
+    flask_app: Application,
+    excepted_config: dict[str, str | int | bool],
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: build and deploy the flask charm, and change Flask app configurations.
+    act: none.
+    assert: Flask application should receive the application configuration correctly.
+    """
+    for unit_ip in await get_unit_ips(flask_app.name):
+        for config_key, config_value in excepted_config.items():
+            assert (
+                requests.get(f"http://{unit_ip}:8000/config/{config_key}", timeout=10).json()
+                == config_value
+            )
+
+
 async def test_with_ingress(
     ops_test: OpsTest,
     model: juju.model.Model,
     flask_app: Application,
     traefik_app_name: str,
     external_hostname: str,
-    get_unit_ips,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
     arrange: build and deploy the flask charm, and deploy the ingress.
@@ -144,7 +179,7 @@ async def test_with_ingress(
     # mypy doesn't see that ActiveStatus has a name
     await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
-    traefik_ip = next(await get_unit_ips(traefik_app_name))
+    traefik_ip = (await get_unit_ips(traefik_app_name))[0]
     response = requests.get(
         f"http://{traefik_ip}",
         headers={"Host": f"{ops_test.model_name}-{flask_app.name}.{external_hostname}"},

@@ -11,7 +11,7 @@ from ops.model import Container
 from ops.testing import Harness
 
 from charm_state import CharmState
-from consts import FLASK_CONTAINER_NAME
+from constants import FLASK_CONTAINER_NAME
 from webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/srv/flask"
