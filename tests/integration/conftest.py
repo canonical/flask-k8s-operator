@@ -32,7 +32,7 @@ def traefik_app_name_fixture() -> str:
     return "traefik-k8s"
 
 
-@pytest_asyncio.fixture(scope="module", name="deploy_flask_app")
+@pytest_asyncio.fixture(scope="module", name="flask_app")
 async def flask_app_fixture(
     ops_test: OpsTest,
     model: Model,
@@ -40,36 +40,29 @@ async def flask_app_fixture(
     external_hostname: str,
     traefik_app_name: str,
 ):
-    """Return a function that builds and deploy the flask charm."""
+    """Build and deploy the flask charm."""
+    app_name = "flask-k8s"
+    charm = await ops_test.build_charm(".")
+    resources = {"flask-app-image": pytestconfig.getoption("--flask-app-image")}
+    flask_app = await model.deploy(
+        charm, resources=resources, application_name=app_name, series="jammy"
+    )
 
-    async def deploy_flask_app(
-        flask_app_image: str = pytestconfig.getoption("--flask-app-image"),
-    ):
-        """Build and deploy the flask charm."""
-        app_name = "flask-k8s"
-        charm = await ops_test.build_charm(".")
-        resources = {"flask-app-image": flask_app_image}
-        flask_app = await model.deploy(
-            charm, resources=resources, application_name=app_name, series="jammy"
+    # deploy traefik if it wasn't already deployed
+    _, status, _ = await ops_test.juju("status", "--format", "json")
+    status = json.loads(status)
+    if traefik_app_name not in status["applications"]:
+        await model.deploy(
+            "traefik-k8s",
+            application_name=traefik_app_name,
+            trust=True,
+            config={
+                "external_hostname": external_hostname,
+                "routing_mode": "subdomain",
+            },
         )
-
-        # deploy traefik if it wasn't already deployed
-        _, status, _ = await ops_test.juju("status", "--format", "json")
-        status = json.loads(status)
-        if traefik_app_name not in status["applications"]:
-            await model.deploy(
-                "traefik-k8s",
-                application_name=traefik_app_name,
-                trust=True,
-                config={
-                    "external_hostname": external_hostname,
-                    "routing_mode": "subdomain",
-                },
-            )
-        await model.wait_for_idle(apps=[app_name, traefik_app_name], raise_on_blocked=True)
-        return flask_app
-
-    return deploy_flask_app
+    await model.wait_for_idle(apps=[app_name, traefik_app_name], raise_on_blocked=True)
+    return flask_app
 
 
 async def model_fixture(ops_test: OpsTest) -> Model:

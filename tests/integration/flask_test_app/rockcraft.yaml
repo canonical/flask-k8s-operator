@@ -16,6 +16,10 @@ parts:
     source: .
     stage-packages:
       - python3-venv
+      - bash
+      - coreutils
+      - curl
+      - vim
     python-packages:
       - gunicorn
     python-requirements:

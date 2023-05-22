@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 async def test_flask_is_up(
-    deploy_flask_app: typing.Callable,
+    flask_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -28,7 +28,6 @@ async def test_flask_is_up(
     act: send a request to the flask application managed by the flask charm.
     assert: the flask application should return a correct response.
     """
-    flask_app: Application = await deploy_flask_app("localhost:32000/hello-world:0.1")
     for unit_ip in await get_unit_ips(flask_app.name):
         response = requests.get(f"http://{unit_ip}:8000", timeout=5)
         assert response.status_code == 200
@@ -46,7 +45,7 @@ async def test_flask_is_up(
 )
 @pytest.mark.usefixtures("update_config")
 async def test_flask_webserver_timeout(
-    deploy_flask_app: typing.Callable,
+    flask_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
     timeout,
 ):
@@ -55,7 +54,6 @@ async def test_flask_webserver_timeout(
     act: send long-running requests to the flask application managed by the flask charm.
     assert: the gunicorn should restart the worker if the request duration exceeds the timeout.
     """
-    flask_app: Application = await deploy_flask_app("localhost:32000/hello-world:0.1")
     safety_timeout = timeout + 3
     for unit_ip in await get_unit_ips(flask_app.name):
         assert requests.get(
@@ -70,7 +68,7 @@ async def test_flask_webserver_timeout(
 async def test_with_ingress(
     ops_test: OpsTest,
     model: juju.model.Model,
-    deploy_flask_app: typing.Callable,
+    flask_app: Application,
     traefik_app_name: str,
     external_hostname: str,
     get_unit_ips,
@@ -80,7 +78,6 @@ async def test_with_ingress(
     act: relate the ingress charm with the Flask charm.
     assert: requesting the charm through traefik should return a correct response
     """
-    flask_app: Application = await deploy_flask_app("localhost:32000/hello-world:0.1")
     await model.add_relation(flask_app.name, traefik_app_name)
     # mypy doesn't see that ActiveStatus has a name
     await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
@@ -96,25 +93,25 @@ async def test_with_ingress(
 
 
 @pytest.mark.parametrize(
-    "image_name, db_name, db_channel",
+    "endpoint,db_name, db_channel",
     [
         (
-            "localhost:32000/simple-mysql:0.1",
+            "mysql/status",
             "mysql-k8s",
             "8.0/stable",
         ),
         (
-            "localhost:32000/simple-postgresql:0.1",
+            "postgresql/status",
             "postgresql-k8s",
             "14/stable",
         ),
     ],
 )
 async def test_with_database(
-    deploy_flask_app: typing.Callable,
+    flask_app: Application,
     model: juju.model.Model,
     get_unit_ips,
-    image_name: str,
+    endpoint: str,
     db_name: str,
     db_channel: str,
 ):
@@ -123,8 +120,6 @@ async def test_with_database(
     act: deploy the ingress, configure it and relate it to the charm.
     assert: requesting the charm through traefik should return a correct response
     """
-    flask_app: Application = await deploy_flask_app(image_name)
-
     db_app = await model.deploy(db_name, channel=db_channel)
     await model.wait_for_idle()
 
@@ -134,6 +129,6 @@ async def test_with_database(
     await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
     for unit_ip in await get_unit_ips(flask_app.name):
-        response = requests.get(f"http://{unit_ip}:8000", timeout=5)
+        response = requests.get(f"http://{unit_ip}:8000/{endpoint}", timeout=5)
         assert response.status_code == 200
         assert "SUCCESS" in response.text

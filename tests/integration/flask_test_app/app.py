@@ -1,5 +1,8 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
+
+"""Flask application made for integration tests."""
+
 import time
 from urllib.parse import urlparse
 
@@ -17,15 +20,15 @@ def get_mysql_database():
     if "mysql_db" not in g:
         if app.config.get("MYSQL_DB_CONNECT_STRING"):
             uri_parts = urlparse(app.config["MYSQL_DB_CONNECT_STRING"])
-            g.database = pymysql.connect(
+            g.mysql_db = pymysql.connect(
                 host=uri_parts.hostname,
                 user=uri_parts.username,
                 password=uri_parts.password,
                 database=uri_parts.path[1:],
                 port=uri_parts.port,
-                cursorclass=pymysql.cursors.DictCursor,
             )
-        return None
+        else:
+            return None
     return g.mysql_db
 
 
@@ -33,20 +36,21 @@ def get_postgresql_database():
     """Get the postgresql db connection."""
     if "postgresql_db" not in g:
         if app.config.get("POSTGRESQL_DB_CONNECT_STRING"):
-            uri_parts = urlparse(app.config["POSTGRESQL_DB_CONNECT_STRING"])
-            g.database = psycopg.connect(
+            uri_parts = urlparse(app.config.get("POSTGRESQL_DB_CONNECT_STRING"))
+            g.postgresql_db = psycopg.connect(
                 host=uri_parts.hostname,
                 user=uri_parts.username,
                 password=uri_parts.password,
-                database=uri_parts.path[1:],
+                dbname=uri_parts.path[1:],
                 port=uri_parts.port,
             )
-        return None
+        else:
+            return None
     return g.postgresql_db
 
 
 @app.teardown_appcontext
-def teardown_database(exception):
+def teardown_database(_):
     """Tear down databases connections."""
     mysql_db = g.pop("mysql_db", None)
     if mysql_db is not None:
@@ -58,7 +62,7 @@ def teardown_database(exception):
 
 @app.route("/")
 def hello_world():
-    """Simple hello world endpoint."""
+    """Simply return hello world."""
     return "Hello, World!"
 
 
