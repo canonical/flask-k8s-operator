@@ -47,20 +47,15 @@ async def flask_app_fixture(
     flask_app = await model.deploy(
         charm, resources=resources, application_name=app_name, series="jammy"
     )
-
-    # deploy traefik if it wasn't already deployed
-    _, status, _ = await ops_test.juju("status", "--format", "json")
-    status = json.loads(status)
-    if traefik_app_name not in status["applications"]:
-        await model.deploy(
-            "traefik-k8s",
-            application_name=traefik_app_name,
-            trust=True,
-            config={
-                "external_hostname": external_hostname,
-                "routing_mode": "subdomain",
-            },
-        )
+    await model.deploy(
+        "traefik-k8s",
+        application_name=traefik_app_name,
+        trust=True,
+        config={
+            "external_hostname": external_hostname,
+            "routing_mode": "subdomain",
+        },
+    )
     await model.wait_for_idle(apps=[app_name, traefik_app_name], raise_on_blocked=True)
     return flask_app
 
