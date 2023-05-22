@@ -8,15 +8,14 @@
 import unittest.mock
 
 import pytest
-from ops.model import ActiveStatus, Container
-
 import yaml
+from ops.model import ActiveStatus, Container
 from ops.testing import Harness
 
-from consts import FLASK_CONTAINER_NAME
 from charm_state import KNOWN_CHARM_CONFIG
 
 FLASK_BASE_DIR = "/srv/flask"
+FLASK_CONTAINER_NAME = "flask-app"
 
 
 def test_flask_pebble_layer(harness: Harness) -> None:

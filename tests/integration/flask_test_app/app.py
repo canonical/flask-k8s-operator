@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import psycopg
 import pymysql
 import pymysql.cursors
-from flask import Flask, g, request, jsonify
+from flask import Flask, g, jsonify, request
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
@@ -112,4 +112,5 @@ def postgresql_env():
 
 @app.route("/config/<config_name>")
 def config(config_name: str):
+    """Return jsonified app config."""
     return jsonify(app.config.get(config_name))

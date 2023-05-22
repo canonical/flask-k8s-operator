@@ -188,6 +188,7 @@ class FlaskCharm(CharmBase):
                 for (db_name, db_uri) in self._database_uri().items()
             }
         )
+        env_config.update(self._flask_app.flask_environment)
         return env_config
 
     def flask_layer(self) -> dict:
@@ -202,7 +203,6 @@ class FlaskCharm(CharmBase):
                     "override": "replace",
                     "summary": "Flask application service",
                     "command": shlex.join(self._webserver.command),
-                    "environment": self._flask_app.flask_environment,
                     "startup": "enabled",
                     "environment": self._get_flask_env_config(),
                 }
