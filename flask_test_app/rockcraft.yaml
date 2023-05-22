@@ -1,6 +1,6 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-name: flask-test-app
+name: flask-app
 summary: A flask test app
 description: OCI image for the test flask app
 version: "0.1"
