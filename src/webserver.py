@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Provide the GunicornWebserver class to represent the gunicorn server."""
+import datetime
 import logging
 import pathlib
 import signal
@@ -12,8 +13,8 @@ from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 from charm_types import ExecResult
-from consts import FLASK_SERVICE_NAME
-from exceptions import WebserverConfigInvalidError
+from constants import FLASK_SERVICE_NAME
+from exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +45,8 @@ class GunicornWebserver:
             The content of the Gunicorn configuration file.
         """
         config_entries = []
-        settings = ("workers", "threads", "keepalive", "timeout")
-        for setting in settings:
-            setting_value = getattr(self._charm_state.webserver_config, setting)
+        for setting, setting_value in self._charm_state.webserver_config.items():
+            setting_value = typing.cast(None | int | datetime.timedelta, setting_value)
             if setting_value is None:
                 continue
             setting_value = (
@@ -133,7 +133,7 @@ chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
             is_webserver_running: Indicates if the web server container is currently running.
 
         Raises:
-            WebserverConfigInvalidError: If the web server configuration check fails.
+            CharmConfigInvalidError: If the web server configuration check fails.
         """
         webserver_config_path = str(self._config_path)
         try:
@@ -150,7 +150,7 @@ chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
                 config_check_result.stdout,
                 config_check_result.stderr,
             )
-            raise WebserverConfigInvalidError(
+            raise CharmConfigInvalidError(
                 "Webserver configuration check failed, please review your charm configuration"
             )
         if is_webserver_running:

@@ -4,11 +4,76 @@
 """This module defines the CharmState class which represents the state of the Flask charm."""
 
 import datetime
+import itertools
 import pathlib
+import typing
 
 from ops.charm import CharmBase
 
+# pydantic is causing this no-name-in-module problem
+from pydantic import (  # pylint: disable=no-name-in-module
+    BaseModel,
+    Extra,
+    Field,
+    ValidationError,
+    validator,
+)
+
 from charm_types import WebserverConfig
+from exceptions import CharmConfigInvalidError
+
+KNOWN_CHARM_CONFIG = (
+    "flask_application_root",
+    "flask_debug",
+    "flask_env",
+    "flask_permanent_session_lifetime",
+    "flask_preferred_url_scheme",
+    "flask_secret_key",
+    "flask_session_cookie_secure",
+    "webserver_keepalive",
+    "webserver_threads",
+    "webserver_timeout",
+    "webserver_workers",
+)
+
+
+class FlaskConfig(BaseModel, extra=Extra.allow):  # pylint: disable=too-few-public-methods
+    """Represent Flask builtin configuration values.
+
+    Attrs:
+        env: what environment the Flask app is running in, by default it's 'production'.
+        debug: whether Flask debug mode is enabled.
+        secret_key: a secret key that will be used for securely signing the session cookie
+            and can be used for any other security related needs by your Flask application.
+        permanent_session_lifetime: set the cookie’s expiration to this number of seconds in the
+            Flask application permanent sessions.
+        application_root: inform the Flask application what path it is mounted under by the
+            application / web server.
+        session_cookie_secure: set the secure attribute in the Flask application cookies.
+        preferred_url_scheme: use this scheme for generating external URLs when not in a request
+            context in the Flask application.
+    """
+
+    env: str | None = Field(None, min_length=1)
+    debug: bool | None = Field(None)
+    secret_key: str | None = Field(None, min_length=1)
+    permanent_session_lifetime: int | None = Field(None, gt=0)
+    application_root: str | None = Field(None, min_length=1)
+    session_cookie_secure: bool | None = Field(None)
+    preferred_url_scheme: str | None = Field(None, regex="(?i)^(HTTP|HTTPS)$")
+
+    @validator("preferred_url_scheme")
+    @classmethod
+    def to_upper(cls, value: str) -> str:
+        """Convert the string field to uppercase.
+
+        Args:
+            value: the input value.
+
+        Returns:
+            The string converted to uppercase.
+        """
+        return value.upper()
 
 
 class CharmState:
@@ -16,6 +81,8 @@ class CharmState:
 
     Attrs:
         webserver_config: the web server configuration file content for the charm.
+        flask_config: the value of the flask_config charm configuration.
+        app_config: user-defined configurations for the Flask application.
         base_dir: the base directory of the Flask application.
         flask_dir: the path to the Flask directory.
         flask_wsgi_app_path: the path to the Flask directory.
@@ -24,6 +91,9 @@ class CharmState:
 
     def __init__(
         self,
+        *,
+        flask_config: dict[str, int | str] | None = None,
+        app_config: dict[str, int | str | bool] | None = None,
         webserver_workers: int | None = None,
         webserver_threads: int | None = None,
         webserver_keepalive: int | None = None,
@@ -32,6 +102,8 @@ class CharmState:
         """Initialize a new instance of the CharmState class.
 
         Args:
+            flask_config: The value of the flask_config charm configuration.
+            app_config: User-defined configuration values for the Flask configuration.
             webserver_workers: The number of workers to use for the web server,
                 or None if not specified.
             webserver_threads: The number of threads per worker to use for the web server,
@@ -45,6 +117,8 @@ class CharmState:
         self._webserver_threads = webserver_threads
         self._webserver_keepalive = webserver_keepalive
         self._webserver_timeout = webserver_timeout
+        self._flask_config = flask_config if flask_config is not None else {}
+        self._app_config = app_config if app_config is not None else {}
 
     @classmethod
     def from_charm(cls, charm: CharmBase) -> "CharmState":
@@ -55,12 +129,31 @@ class CharmState:
 
         Return:
             The CharmState instance created by the provided charm.
+
+        Raises:
+            CharmConfigInvalidError: if the charm configuration is invalid.
         """
         keepalive = charm.config.get("webserver_keepalive")
         timeout = charm.config.get("webserver_timeout")
         workers = charm.config.get("webserver_workers")
         threads = charm.config.get("webserver_threads")
+        flask_config = {
+            k.removeprefix("flask_"): v
+            for k, v in charm.config.items()
+            if k.startswith("flask_") and k in KNOWN_CHARM_CONFIG
+        }
+        app_config = {k: v for k, v in charm.config.items() if k not in KNOWN_CHARM_CONFIG}
+        try:
+            valid_flask_config = FlaskConfig(**flask_config)  # type: ignore
+        except ValidationError as exc:
+            error_fields = set(
+                itertools.chain.from_iterable(error["loc"] for error in exc.errors())
+            )
+            error_field_str = " ".join(f"flask_{f}" for f in error_fields)
+            raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
         return cls(
+            flask_config=valid_flask_config.dict(exclude_unset=True, exclude_none=True),
+            app_config=typing.cast(dict[str, str | int | bool], app_config),
             webserver_workers=int(workers) if workers is not None else None,
             webserver_threads=int(threads) if threads is not None else None,
             webserver_keepalive=int(keepalive) if keepalive is not None else None,
@@ -69,7 +162,7 @@ class CharmState:
 
     @property
     def webserver_config(self) -> WebserverConfig:
-        """Gets the web server configuration file content for the charm.
+        """Get the web server configuration file content for the charm.
 
         Returns:
             The web server configuration file content for the charm.
@@ -84,6 +177,24 @@ class CharmState:
             if self._webserver_timeout is not None
             else None,
         )
+
+    @property
+    def flask_config(self) -> dict[str, str | int | bool]:
+        """Get the value of the flask_config charm configuration.
+
+        Returns:
+            The value of the flask_config charm configuration.
+        """
+        return self._flask_config.copy()
+
+    @property
+    def app_config(self) -> dict[str, str | int | bool]:
+        """Get the value of user-defined Flask application configurations.
+
+        Returns:
+            The value of user-defined Flask application configurations.
+        """
+        return self._app_config.copy()
 
     @property
     def base_dir(self) -> pathlib.Path:

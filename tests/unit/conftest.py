@@ -14,7 +14,7 @@ from ops.testing import Harness
 
 from charm import FlaskCharm
 from charm_types import ExecResult
-from consts import FLASK_CONTAINER_NAME
+from constants import FLASK_CONTAINER_NAME
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):
