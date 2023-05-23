@@ -36,13 +36,8 @@ def get_postgresql_database():
     """Get the postgresql db connection."""
     if "postgresql_db" not in g:
         if app.config.get("POSTGRESQL_DB_CONNECT_STRING"):
-            uri_parts = urlparse(app.config.get("POSTGRESQL_DB_CONNECT_STRING"))
             g.postgresql_db = psycopg.connect(
-                host=uri_parts.hostname,
-                user=uri_parts.username,
-                password=uri_parts.password,
-                dbname=uri_parts.path[1:],
-                port=uri_parts.port,
+                conninfo=app.config.get('POSTGRESQL_DB_CONNECT_STRING'),
             )
         else:
             return None

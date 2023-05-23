@@ -193,16 +193,8 @@ async def test_with_ingress(
 @pytest.mark.parametrize(
     "endpoint,db_name, db_channel",
     [
-        (
-            "mysql/status",
-            "mysql-k8s",
-            "8.0/stable",
-        ),
-        (
-            "postgresql/status",
-            "postgresql-k8s",
-            "14/stable",
-        ),
+        ("mysql/status", "mysql-k8s", "8.0/stable"),
+        ("postgresql/status", "postgresql-k8s", "14/stable"),
     ],
 )
 async def test_with_database(
@@ -215,8 +207,8 @@ async def test_with_database(
 ):
     """
     arrange: build and deploy the flask charm.
-    act: deploy the ingress, configure it and relate it to the charm.
-    assert: requesting the charm through traefik should return a correct response
+    act: deploy the database and relate it to the charm.
+    assert: requesting the charm should return a correct response
     """
     db_app = await model.deploy(db_name, channel=db_channel)
     await model.wait_for_idle()
