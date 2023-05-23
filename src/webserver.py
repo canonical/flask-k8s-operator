@@ -138,6 +138,7 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         Raises:
             CharmConfigInvalidError: If the web server configuration check fails.
         """
+        self._prepare_flask_log_dir()
         webserver_config_path = str(self._config_path)
         try:
             current_webserver_config = self._flask_container.pull(webserver_config_path)
@@ -159,3 +160,11 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
             self._flask_container.send_signal(self._reload_signal, FLASK_SERVICE_NAME)
+
+    def _prepare_flask_log_dir(self) -> None:
+        """Prepare Flask access and error log directory for the Flask application."""
+        container = self._flask_container
+        for log in (self._charm_state.flask_access_log, self._charm_state.flask_error_log):
+            log_dir = str(log.parent.absolute())
+            if not container.isdir(log_dir):
+                container.make_dir(log_dir, make_parents=True)

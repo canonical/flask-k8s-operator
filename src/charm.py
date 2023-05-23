@@ -93,14 +93,6 @@ class FlaskCharm(CharmBase):
         container = self.unit.get_container(FLASK_CONTAINER_NAME)
         return container
 
-    def _prepare_flask_log_dir(self) -> None:
-        """Prepare Flask access and error log directory for the Flask application."""
-        container = self.container()
-        for log in (self._charm_state.flask_access_log, self._charm_state.flask_error_log):
-            log_dir = str(log.parent.absolute())
-            if not container.isdir(log_dir):
-                container.make_dir(log_dir, make_parents=True)
-
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
 
@@ -113,7 +105,6 @@ class FlaskCharm(CharmBase):
             logger.info("pebble client in the Flask container is not ready, defer config-changed")
             event.defer()
             return
-        self._prepare_flask_log_dir()
         container.add_layer("flask-app", self.flask_layer(), combine=True)
         is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         try:
