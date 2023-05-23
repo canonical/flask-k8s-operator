@@ -9,6 +9,7 @@ from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
 from ops import CharmBase
 
 from charm_state import CharmState
+from constants import FLASK_CONTAINER_NAME
 
 
 class Observability:  # pylint: disable=too-few-public-methods
@@ -24,13 +25,13 @@ class Observability:  # pylint: disable=too-few-public-methods
         self._metrics_endpoint = MetricsEndpointProvider(
             charm,
             relation_name="metrics-endpoint",
-            jobs=[{"static_configs": [{"targets": ["*:80"]}]}],
+            jobs=[{"static_configs": [{"targets": ["*:9102"]}]}],
         )
         self._logging = LogProxyConsumer(
             charm,
             relation_name="logging",
             log_files=[str(charm_state.flask_access_log), str(charm_state.flask_error_log)],
-            container_name="flask-app",
+            container_name=FLASK_CONTAINER_NAME,
         )
         self._grafana_dashboards = GrafanaDashboardProvider(
             charm, relation_name="grafana-dashboard"
