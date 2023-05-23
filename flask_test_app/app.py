@@ -6,6 +6,7 @@
 import time
 from urllib.parse import urlparse
 
+import os
 import psycopg
 import pymysql
 import pymysql.cursors
@@ -18,8 +19,8 @@ app.config.from_prefixed_env()
 def get_mysql_database():
     """Get the mysql db connection."""
     if "mysql_db" not in g:
-        if app.config.get("MYSQL_DB_CONNECT_STRING"):
-            uri_parts = urlparse(app.config["MYSQL_DB_CONNECT_STRING"])
+        if "MYSQL_DB_CONNECT_STRING" in os.environ:
+            uri_parts = urlparse(os.environ["MYSQL_DB_CONNECT_STRING"])
             g.mysql_db = pymysql.connect(
                 host=uri_parts.hostname,
                 user=uri_parts.username,
@@ -35,9 +36,9 @@ def get_mysql_database():
 def get_postgresql_database():
     """Get the postgresql db connection."""
     if "postgresql_db" not in g:
-        if app.config.get("POSTGRESQL_DB_CONNECT_STRING"):
+        if "POSTGRESQL_DB_CONNECT_STRING" in os.environ:
             g.postgresql_db = psycopg.connect(
-                conninfo=app.config.get('POSTGRESQL_DB_CONNECT_STRING'),
+                conninfo=os.environ['POSTGRESQL_DB_CONNECT_STRING'],
             )
         else:
             return None

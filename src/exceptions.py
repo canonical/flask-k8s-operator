@@ -22,3 +22,7 @@ class CharmConfigInvalidError(Exception):
 
 class PebbleNotReadyError(Exception):
     """Exception raised when accessing pebble while it isn't ready."""
+
+
+class InvalidDatabaseRelationDataError(Exception):
+    """Exception raised when the relation data with a database is not valid."""
