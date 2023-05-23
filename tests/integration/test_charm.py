@@ -3,20 +3,20 @@
 # See LICENSE file for licensing details.
 
 """Integration tests for Flask charm."""
+import asyncio
 import json
 import logging
 import typing
 
-import juju
 import pytest
 import requests
 from juju.application import Application
+from juju.model import Model
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
-
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +164,7 @@ async def test_app_config(
 
 async def test_with_ingress(
     ops_test: OpsTest,
-    model: juju.model.Model,
+    model: Model,
     flask_app: Application,
     traefik_app_name: str,
     external_hostname: str,
@@ -187,3 +187,103 @@ async def test_with_ingress(
     )
     assert response.status_code == 200
     assert "Hello, World!" in response.text
+
+
+async def test_prometheus_integration(
+    model: Model,
+    prometheus_app_name: str,
+    flask_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: after Flask charm has been deployed.
+    act: establish relations established with prometheus charm.
+    assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
+        targets.
+    """
+    await model.add_relation(prometheus_app_name, flask_app.name)
+    await model.wait_for_idle(apps=[flask_app.name, prometheus_app_name], status="active")
+
+    for unit_ip in await get_unit_ips(prometheus_app_name):
+        query_targets = requests.get(f"http://{unit_ip}:9090/api/v1/targets", timeout=10).json()
+        assert len(query_targets["data"]["activeTargets"])
+
+
+async def test_loki_integration(
+    model: Model,
+    loki_app_name: str,
+    flask_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: after Flask charm has been deployed.
+    act: establish relations established with loki charm.
+    assert: loki joins relation successfully, logs are being output to container and to files for
+        loki to scrape.
+    """
+    await model.add_relation(loki_app_name, flask_app.name)
+
+    await model.wait_for_idle(
+        apps=[flask_app.name, loki_app_name], status="active", idle_period=60
+    )
+    flask_ip = (await get_unit_ips(flask_app.name))[0]
+    # populate the access log
+    for _ in range(120):
+        requests.get(f"http://{flask_ip}:8000", timeout=10)
+        await asyncio.sleep(1)
+    loki_ip = (await get_unit_ips(loki_app_name))[0]
+    log_query = requests.get(
+        f"http://{loki_ip}:3100/loki/api/v1/query",
+        timeout=10,
+        params={"query": f'{{juju_application="{flask_app.name}"}}'},
+    ).json()
+    assert len(log_query["data"]["result"])
+
+
+async def test_grafana_integration(
+    model: Model,
+    flask_app: Application,
+    prometheus_app_name: str,
+    loki_app_name: str,
+    grafana_app_name: str,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: after Flask charm has been deployed.
+    act: establish relations established with grafana charm.
+    assert: grafana Flask dashboard can be found.
+    """
+    await model.relate(
+        f"{prometheus_app_name}:grafana-source", f"{grafana_app_name}:grafana-source"
+    )
+    await model.relate(f"{loki_app_name}:grafana-source", f"{grafana_app_name}:grafana-source")
+    await model.relate(flask_app.name, grafana_app_name)
+
+    await model.wait_for_idle(
+        apps=[flask_app.name, prometheus_app_name, loki_app_name, grafana_app_name],
+        status="active",
+        idle_period=60,
+    )
+
+    action = await model.applications[grafana_app_name].units[0].run_action("get-admin-password")
+    await action.wait()
+    password = action.results["admin-password"]
+    grafana_ip = (await get_unit_ips(grafana_app_name))[0]
+    sess = requests.session()
+    sess.post(
+        f"http://{grafana_ip}:3000/login",
+        json={
+            "user": "admin",
+            "password": password,
+        },
+    ).raise_for_status()
+    datasources = sess.get(f"http://{grafana_ip}:3000/api/datasources", timeout=10).json()
+    datasource_types = set(datasource["type"] for datasource in datasources)
+    assert "loki" in datasource_types
+    assert "prometheus" in datasource_types
+    dashboards = sess.get(
+        f"http://{grafana_ip}:3000/api/search",
+        timeout=10,
+        params={"query": "Flask Operator"},
+    ).json()
+    assert len(dashboards)
