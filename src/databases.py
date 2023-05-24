@@ -74,8 +74,8 @@ class Databases:  # pylint: disable=too-few-public-methods
         """
         db_uris: typing.Dict[str, str] = {}
 
-        # the database_requirer could not be defined
-        # if _database_uri() is called before its initialization
+        # the database requires could not be defined
+        # if get_uris() is called before their initialization
         if not hasattr(self, "_databases") or not self._databases:
             return db_uris
 

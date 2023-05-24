@@ -16,7 +16,11 @@ from ops.model import ActiveStatus, BlockedStatus, Container, StatusBase
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
 from databases import Databases
-from exceptions import CharmConfigInvalidError, PebbleNotReadyError
+from exceptions import (
+    CharmConfigInvalidError,
+    InvalidDatabaseRelationDataError,
+    PebbleNotReadyError,
+)
 from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
@@ -33,7 +37,7 @@ class FlaskCharm(CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self.databases = Databases(charm=self)
+        self._databases = Databases(charm=self)
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
@@ -118,7 +122,12 @@ class FlaskCharm(CharmBase):
             The pebble layer definition for flask application.
         """
         environment = self._flask_app.flask_environment
-        environment.update(self.databases.get_uris())
+        try:
+            environment.update(self._databases.get_uris())
+        except InvalidDatabaseRelationDataError as exc:
+            self._update_app_and_unit_status(BlockedStatus(exc.msg))
+            # Returning an empty dict will cancel add_layer() when used with combine=True
+            return {}
         return {
             "services": {
                 "flask-app": {

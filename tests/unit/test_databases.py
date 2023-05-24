@@ -98,9 +98,11 @@ def test_database_uri(
 
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
-
     harness.begin()
-    assert harness.charm.databases.get_uris() == {}
+
+    # Allowing protected access to test the output
+    # pylint: disable=protected-access
+    assert harness.charm._databases.get_uris() == {}
 
     for relation in relations:
         database_charm_name = f"some_db_charm_{relation['interface']}"
@@ -109,4 +111,6 @@ def test_database_uri(
         harness.update_relation_data(relation_id, database_charm_name, relation["data"])
         harness.update_config()
 
-    assert harness.charm.databases.get_uris() == expected_output
+    # Allowing protected access to test the output
+    # pylint: disable=protected-access
+    assert harness.charm._databases.get_uris() == expected_output

@@ -82,12 +82,6 @@ def mysql_status():
     return "FAIL"
 
 
-@app.route("/mysql/env")
-def mysql_env():
-    """Mysql env endpoint."""
-    return app.config.get("MYSQL_DB_CONNECT_STRING")
-
-
 @app.route("/postgresql/status")
 def postgresql_status():
     """Postgresql status endpoint."""
@@ -98,12 +92,6 @@ def postgresql_status():
             cursor.fetchone()
             return "SUCCESS"
     return "FAIL"
-
-
-@app.route("/postgresql/env")
-def postgresql_env():
-    """Postgresql env endpoint."""
-    return app.config.get("POSTGRESQL_DB_CONNECT_STRING")
 
 
 @app.route("/config/<config_name>")
