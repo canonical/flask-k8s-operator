@@ -88,6 +88,9 @@ class CharmState:
         flask_dir: the path to the Flask directory.
         flask_wsgi_app_path: the path to the Flask directory.
         flask_port: the port number to use for the Flask server.
+        flask_access_log: the file path for the Flask access log.
+        flask_error_log: the file path for the Flask error log.
+        flask_statsd_host: the statsd server host for Flask metrics.
     """
 
     def __init__(
@@ -234,3 +237,30 @@ class CharmState:
             The port number to use for the Flask server.
         """
         return 8000
+
+    @property
+    def flask_access_log(self) -> pathlib.Path:
+        """Returns the file path for the Flask access log.
+
+        Returns:
+            The file path for the Flask access log.
+        """
+        return pathlib.Path("/var/log/flask/access.log")
+
+    @property
+    def flask_error_log(self) -> pathlib.Path:
+        """Returns the file path for the Flask error log.
+
+        Returns:
+            The file path for the Flask error log.
+        """
+        return pathlib.Path("/var/log/flask/error.log")
+
+    @property
+    def flask_statsd_host(self) -> str:
+        """Returns the statsd server host for Flask metrics.
+
+        Returns:
+            The statsd server host for Flask metrics.
+        """
+        return "localhost:9125"

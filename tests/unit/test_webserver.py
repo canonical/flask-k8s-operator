@@ -26,6 +26,9 @@ FLASK_BASE_DIR = "/srv/flask"
                 f"""\
                 bind = ['0.0.0.0:8000']
                 chdir = '{FLASK_BASE_DIR}/app'
+                accesslog = '/var/log/flask/access.log'
+                errorlog = '/var/log/flask/error.log'
+                statsd_host = 'localhost:9125'
                 workers = 10"""
             ),
             id="workers=10",
@@ -36,6 +39,9 @@ FLASK_BASE_DIR = "/srv/flask"
                 f"""\
                 bind = ['0.0.0.0:8000']
                 chdir = '{FLASK_BASE_DIR}/app'
+                accesslog = '/var/log/flask/access.log'
+                errorlog = '/var/log/flask/error.log'
+                statsd_host = 'localhost:9125'
                 threads = 2
                 keepalive = 4
                 timeout = 3"""
