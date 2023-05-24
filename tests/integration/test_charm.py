@@ -8,10 +8,10 @@ import json
 import logging
 import typing
 
+import juju
 import pytest
 import requests
 from juju.application import Application
-from juju.model import Model
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
@@ -165,7 +165,7 @@ async def test_app_config(
 
 async def test_with_ingress(
     ops_test: OpsTest,
-    model: Model,
+    model: juju.model.Model,
     flask_app: Application,
     traefik_app_name: str,
     external_hostname: str,
@@ -225,7 +225,7 @@ async def test_with_database(
 
 
 async def test_prometheus_integration(
-    model: Model,
+    model: juju.model.Model,
     prometheus_app_name: str,
     flask_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
@@ -245,7 +245,7 @@ async def test_prometheus_integration(
 
 
 async def test_loki_integration(
-    model: Model,
+    model: juju.model.Model,
     loki_app_name: str,
     flask_app: Application,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
@@ -276,7 +276,7 @@ async def test_loki_integration(
 
 
 async def test_grafana_integration(
-    model: Model,
+    model: juju.model.Model,
     flask_app: Application,
     prometheus_app_name: str,
     loki_app_name: str,
