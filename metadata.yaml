@@ -41,11 +41,11 @@ requires:
     interface: ingress
     limit: 1
     optional: true
-  mysql:
+  db_mysql:
     interface: mysql_client
     limit: 1
     optional: true
-  postgresql:
+  db_postgresql:
     interface: postgresql_client
     limit: 1
     optional: true

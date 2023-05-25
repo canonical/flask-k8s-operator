@@ -221,7 +221,7 @@ async def test_with_database(
     for unit_ip in await get_unit_ips(flask_app.name):
         response = requests.get(f"http://{unit_ip}:8000/{endpoint}", timeout=5)
         assert response.status_code == 200
-        assert "SUCCESS" in response.text
+        assert "SUCCESS" == response.text
 
 
 async def test_prometheus_integration(

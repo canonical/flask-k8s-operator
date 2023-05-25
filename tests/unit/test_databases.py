@@ -18,7 +18,7 @@ FLASK_CONTAINER_NAME = "flask-app"
         (
             (
                 {
-                    "interface": "mysql",
+                    "interface": "db_mysql",
                     "data": {
                         "endpoints": "test-mysql:3306",
                         "password": "test-password",
@@ -35,7 +35,7 @@ FLASK_CONTAINER_NAME = "flask-app"
         (
             (
                 {
-                    "interface": "postgresql",
+                    "interface": "db_postgresql",
                     "data": {
                         "database": "test-database",
                         "endpoints": "test-postgresql:5432,test-postgresql-2:5432",
@@ -54,7 +54,7 @@ FLASK_CONTAINER_NAME = "flask-app"
         (
             (
                 {
-                    "interface": "mysql",
+                    "interface": "db_mysql",
                     "data": {
                         "endpoints": "test-mysql:3306",
                         "password": "test-password",
@@ -62,7 +62,7 @@ FLASK_CONTAINER_NAME = "flask-app"
                     },
                 },
                 {
-                    "interface": "postgresql",
+                    "interface": "db_postgresql",
                     "data": {
                         "database": "test-database",
                         "endpoints": "test-postgresql:5432,test-postgresql-2:5432",

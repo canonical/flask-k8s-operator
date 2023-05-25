@@ -6,9 +6,10 @@
 import logging
 import typing
 
+import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
 
-from constants import FLASK_DATABASE_NAME, FLASK_SUPPORTED_DATABASES
+from constants import FLASK_DATABASE_NAME
 from exceptions import InvalidDatabaseRelationDataError
 
 if typing.TYPE_CHECKING:
@@ -32,9 +33,16 @@ class Databases:  # pylint: disable=too-few-public-methods
             charm: The main charm. Used for events callbacks
         """
         self._charm = charm
+
+        with open("metadata.yaml", encoding="utf-8") as metadata_fo:
+            metadata = yaml.safe_load(metadata_fo)
+            self._db_interfaces = (
+                name for name in list(metadata["requires"]) if name.startswith("db_")
+            )
+
         self._databases: typing.Dict[str, DatabaseRequires] = {
             name: self._setup_database_requirer(name, FLASK_DATABASE_NAME)
-            for name in FLASK_SUPPORTED_DATABASES
+            for name in self._db_interfaces
         }
 
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:
@@ -79,7 +87,7 @@ class Databases:  # pylint: disable=too-few-public-methods
         if not hasattr(self, "_databases") or not self._databases:
             return db_uris
 
-        for database, db_requires in self._databases.items():
+        for interface_name, db_requires in self._databases.items():
             relation_data = list(db_requires.fetch_relation_data().values())
 
             if not relation_data:
@@ -99,8 +107,8 @@ class Databases:  # pylint: disable=too-few-public-methods
 
             database_name = data.get("database", db_requires.database)
             endpoint = data["endpoints"].split(",")[0]
-            db_uris[f"{database.upper()}_DB_CONNECT_STRING"] = (
-                f"{database}://"
+            db_uris[f"{interface_name[3:].upper()}_DB_CONNECT_STRING"] = (
+                f"{interface_name[3:]}://"
                 f"{data['username']}:{data['password']}"
                 f"@{endpoint}/{database_name}"
             )
