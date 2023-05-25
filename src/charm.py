@@ -49,7 +49,7 @@ class FlaskCharm(CharmBase):
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
         self._flask_app = FlaskApp(charm_state=self._charm_state)
-        self.framework.observe(self.on.config_changed, self.on_config_changed)
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(
             self.on.statsd_prometheus_exporter_pebble_ready,
             self._on_statsd_prometheus_exporter_pebble_ready,
@@ -99,7 +99,7 @@ class FlaskCharm(CharmBase):
         container = self.unit.get_container(FLASK_CONTAINER_NAME)
         return container
 
-    def on_config_changed(self, event: ConfigChangedEvent) -> None:
+    def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
 
         Args:
@@ -136,7 +136,7 @@ class FlaskCharm(CharmBase):
             return {}
         return {
             "services": {
-                "flask-app": {
+                FLASK_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Flask application service",
                     "command": shlex.join(self._webserver.command),

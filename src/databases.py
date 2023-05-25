@@ -7,10 +7,10 @@ import logging
 import typing
 
 import yaml
-from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires
+from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 
-from constants import FLASK_DATABASE_NAME
-from exceptions import InvalidDatabaseRelationDataError
+from constants import FLASK_CONTAINER_NAME, FLASK_DATABASE_NAME, FLASK_SERVICE_NAME
+from exceptions import InvalidDatabaseRelationDataError, PebbleNotReadyError
 
 if typing.TYPE_CHECKING:
     from charm import FlaskCharm
@@ -45,6 +45,24 @@ class Databases:  # pylint: disable=too-few-public-methods
             for name in self._db_interfaces
         }
 
+    def _on_database_requires_event(self, event: DatabaseRequiresEvent) -> None:
+        """Configure the flask pebble service layer in case of DatabaseRequiresEvent.
+
+        Args:
+            event: the database-requires-changed event that trigger this callback function.
+        """
+        try:
+            container = self._charm.unit.get_container(FLASK_CONTAINER_NAME)
+        except PebbleNotReadyError:
+            logger.info(
+                "pebble client in the Flask container is not ready, defer database-requires-event"
+            )
+            event.defer()
+            return
+        plan = container.get_plan()
+        plan.services[FLASK_SERVICE_NAME].environment.update(self.get_uris())
+        container.replan()
+
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:
         """Set up a DatabaseRequires instance.
 
@@ -64,10 +82,10 @@ class Databases:  # pylint: disable=too-few-public-methods
             database_name=database_name,
         )
         self._charm.framework.observe(
-            database_requirer.on.database_created, self._charm.on_config_changed
+            database_requirer.on.database_created, self._on_database_requires_event
         )
         self._charm.framework.observe(
-            self._charm.on[relation_name].relation_broken, self._charm.on_config_changed
+            self._charm.on[relation_name].relation_broken, self._on_database_requires_event
         )
         return database_requirer
 
