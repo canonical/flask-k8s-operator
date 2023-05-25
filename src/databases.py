@@ -6,19 +6,20 @@
 import logging
 import typing
 
+import ops.framework
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
+from ops.charm import CharmBase
 
 from constants import FLASK_CONTAINER_NAME, FLASK_DATABASE_NAME, FLASK_SERVICE_NAME
 from exceptions import InvalidDatabaseRelationDataError, PebbleNotReadyError
 
-if typing.TYPE_CHECKING:
-    from charm import FlaskCharm
-
 logger = logging.getLogger(__name__)
 
 
-class Databases:  # pylint: disable=too-few-public-methods
+# We need to derive from ops.framework.Object to subscribe to callbacks
+# from ops.framework. See: https://github.com/canonical/operator/blob/main/ops/framework.py#L782
+class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
     """A class handling databases relations and state.
 
     Attrs:
@@ -26,12 +27,14 @@ class Databases:  # pylint: disable=too-few-public-methods
         _databases: A dict of DatabaseRequires to store relations
     """
 
-    def __init__(self, charm: "FlaskCharm"):
+    def __init__(self, charm: CharmBase):
         """Initialize a new instance of the Databases class.
 
         Args:
             charm: The main charm. Used for events callbacks
         """
+        # The following is necessary to be able to subscribe to callbacks from ops.framework
+        super().__init__(charm, "databases")
         self._charm = charm
 
         with open("metadata.yaml", encoding="utf-8") as metadata_fo:
@@ -60,7 +63,8 @@ class Databases:  # pylint: disable=too-few-public-methods
             event.defer()
             return
         plan = container.get_plan()
-        plan.services[FLASK_SERVICE_NAME].environment.update(self.get_uris())
+        if FLASK_SERVICE_NAME in plan.services:
+            plan.services[FLASK_SERVICE_NAME].environment.update(self.get_uris())
         container.replan()
 
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:

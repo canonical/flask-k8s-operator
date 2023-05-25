@@ -92,12 +92,12 @@ def test_database_uri(
     """
     arrange: none
     act: start the flask charm, set flask-app container to be ready and relate it to the db.
-    assert: _database_uri() should return the correct databaseURI dict
+    assert: get_uris() should return the correct databaseURI dict
     """
     container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
-
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
+
     harness.begin()
 
     # Allowing protected access to test the output
