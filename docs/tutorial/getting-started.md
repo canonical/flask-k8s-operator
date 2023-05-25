@@ -40,7 +40,7 @@ requirements:
 - The Flask WSGI application should be located at `/srv/flask/app/app.py`, with
   the variable name `app`
 - The Flask application must invoke `app.config.from_prefixed_env()` to receive
-  charm configuration
+  configuration
 
 The flask-k8s repository offers a sample [rockcraft
 project](https://github.com/canonical/flask-k8s-operator/tree/main/sample_rock)

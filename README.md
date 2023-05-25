@@ -31,7 +31,7 @@ fixes and constructive feedback.
 - [Code of conduct](https://ubuntu.com/community/code-of-conduct)
 - [Get support](https://discourse.charmhub.io/)
 - [Join our online chat](https://chat.charmhub.io/charmhub/channels/charm-dev)
-- [Contribute](Contribute)
+- [Contribute](https://charmhub.io/flask-k8s/docs/how-to-contribute)
 
 Thinking about using the Flask Operator for your next project?
 [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
