@@ -35,6 +35,10 @@ To build and deploy the flask-k8s charm from source, follow the steps below.
 Build your Flask application image, and to allow microk8s to pick up the locally
 built image, you must export the image and import it within microk8s.
 
+```bash
+docker save flask:test > flask.tar && microk8s import flask.tar
+```
+
 #### Build the Charm
 
 Build the charm locally using charmcraft. It should output a .charm file.
