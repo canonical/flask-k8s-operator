@@ -123,34 +123,31 @@ async def flask_app_fixture(  # pylint: disable=too-many-arguments
     return deploy_result[0]
 
 
-@pytest_asyncio.fixture(scope="module", name="deploy_cos_apps")
+@pytest_asyncio.fixture(scope="module", name="cos_apps")
 async def deploy_cos_fixture(  # pylint: disable=too-many-arguments
     model: Model,
     prometheus_app_name: str,
     loki_app_name: str,
     grafana_app_name: str,
 ):
-    """Return a function to deploy the cos applications."""
+    """Deploy the cos applications."""
+    cos_apps = await asyncio.gather(
+        model.deploy(
+            "prometheus-k8s",
+            application_name=prometheus_app_name,
+            channel="latest/edge",
+            trust=True,
+        ),
+        model.deploy(
+            "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
+        ),
+        model.deploy(
+            "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
+        ),
+        model.wait_for_idle(raise_on_blocked=True),
+    )
 
-    async def deploy_cos_apps():
-        """Deploy the cos applications."""
-        await asyncio.gather(
-            model.deploy(
-                "prometheus-k8s",
-                application_name=prometheus_app_name,
-                channel="latest/edge",
-                trust=True,
-            ),
-            model.deploy(
-                "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
-            ),
-            model.deploy(
-                "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
-            ),
-            model.wait_for_idle(raise_on_blocked=True),
-        )
-
-    return deploy_cos_apps
+    return cos_apps
 
 
 async def model_fixture(ops_test: OpsTest) -> Model:
