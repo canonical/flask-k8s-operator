@@ -4,6 +4,7 @@
 """Provide the Databases class to handle database relations and state."""
 
 import logging
+import pathlib
 import typing
 
 import ops.framework
@@ -37,11 +38,10 @@ class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
         super().__init__(charm, "databases")
         self._charm = charm
 
-        with open("metadata.yaml", encoding="utf-8") as metadata_fo:
-            metadata = yaml.safe_load(metadata_fo)
-            self._db_interfaces = (
-                name for name in list(metadata["requires"]) if name.startswith("db_")
-            )
+        metadata = yaml.safe_load(pathlib.Path("metadata.yaml").read_text(encoding="utf-8"))
+        self._db_interfaces = (
+            name for name in list(metadata["requires"]) if name.startswith("db_")
+        )
 
         self._databases: typing.Dict[str, DatabaseRequires] = {
             name: self._setup_database_requirer(name, FLASK_DATABASE_NAME)
@@ -116,7 +116,7 @@ class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
                 continue
 
             # There can be only one database integrated at a time
-            # see: metadata.yaml
+            # with the same interface name. See: metadata.yaml
             data = relation_data[0]
 
             # Check that the relation data is well formed according to the following json_schema:

@@ -9,7 +9,8 @@ import pytest
 from ops.model import Container
 from ops.testing import Harness
 
-FLASK_CONTAINER_NAME = "flask-app"
+from constants import FLASK_CONTAINER_NAME, FLASK_DATABASE_NAME
+from databases import Databases
 
 
 @pytest.mark.parametrize(
@@ -83,7 +84,7 @@ FLASK_CONTAINER_NAME = "flask-app"
         ),
     ],
 )
-def test_database_uri(
+def test_database_uri_mocked(
     monkeypatch: pytest.MonkeyPatch,
     harness: Harness,
     relations: tuple,
@@ -98,19 +99,19 @@ def test_database_uri(
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
 
-    harness.begin()
+    databases = Databases(unittest.mock.MagicMock())
+    assert not databases.get_uris()
 
-    # Allowing protected access to test the output
-    # pylint: disable=protected-access
-    assert harness.charm._databases.get_uris() == {}
-
+    dbs = {}
     for relation in relations:
-        database_charm_name = f"some_db_charm_{relation['interface']}"
-        relation_id: int = harness.add_relation(relation["interface"], database_charm_name)
-        harness.add_relation_unit(relation_id, f"{database_charm_name}/0")
-        harness.update_relation_data(relation_id, database_charm_name, relation["data"])
-        harness.update_config()
+        interface = relation["interface"]
+        dbr = unittest.mock.MagicMock()
+        dbr.fetch_relation_data = unittest.mock.MagicMock(return_value={"data": relation["data"]})
+        dbr.database = relation["data"].get("database", FLASK_DATABASE_NAME)
+        dbs[interface] = dbr
 
     # Allowing protected access to test the output
     # pylint: disable=protected-access
-    assert harness.charm._databases.get_uris() == expected_output
+    databases._databases = dbs
+
+    assert databases.get_uris() == expected_output
