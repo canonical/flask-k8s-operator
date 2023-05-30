@@ -130,8 +130,10 @@ async def deploy_cos_fixture(  # pylint: disable=too-many-arguments
     loki_app_name: str,
     grafana_app_name: str,
 ):
-    """Build and deploy the cos applications."""
+    """Return a function to deploy the cos applications."""
+
     async def deploy_cos_apps():
+        """Deploy the cos applications."""
         await asyncio.gather(
             model.deploy(
                 "prometheus-k8s",
@@ -147,6 +149,7 @@ async def deploy_cos_fixture(  # pylint: disable=too-many-arguments
             ),
             model.wait_for_idle(raise_on_blocked=True),
         )
+
     return deploy_cos_apps
 
 
