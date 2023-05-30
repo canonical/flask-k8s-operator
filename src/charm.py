@@ -18,6 +18,7 @@ from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
 from exceptions import CharmConfigInvalidError, PebbleNotReadyError
 from flask_app import FlaskApp
 from observability import Observability
+from sentinel import Sentinel
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,9 @@ class FlaskCharm(CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
+        self._sentinel = Sentinel(charm=self)
+        if not self._precondition_check():
+            return
         try:
             self._charm_state = CharmState.from_charm(charm=self)
         except CharmConfigInvalidError as exc:
@@ -58,6 +62,21 @@ class FlaskCharm(CharmBase):
             strip_prefix=True,
         )
         self._observability = Observability(charm=self, charm_state=self._charm_state)
+
+    def _precondition_check(self) -> bool:
+        """Check preconditions for charm execution are met.
+
+        Returns: True if the precondition is met, False otherwise.
+        """
+        if self._sentinel.is_sentinel_image():
+            self._update_app_and_unit_status(
+                BlockedStatus(
+                    "charm requires a Flask app image, "
+                    "redeploy with '--resource flask-app-image=<your-image>'"
+                )
+            )
+            return False
+        return True
 
     def _update_app_and_unit_status(self, status: StatusBase) -> None:
         """Update the application and unit status.
