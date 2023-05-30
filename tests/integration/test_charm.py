@@ -193,6 +193,7 @@ async def test_prometheus_integration(
     model: Model,
     prometheus_app_name: str,
     flask_app: Application,
+    deploy_cos_apps: typing.Callable,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -201,6 +202,7 @@ async def test_prometheus_integration(
     assert: prometheus metrics endpoint for prometheus is active and prometheus has active scrape
         targets.
     """
+    await deploy_cos_apps()
     await model.add_relation(prometheus_app_name, flask_app.name)
     await model.wait_for_idle(apps=[flask_app.name, prometheus_app_name], status="active")
 
@@ -213,6 +215,7 @@ async def test_loki_integration(
     model: Model,
     loki_app_name: str,
     flask_app: Application,
+    deploy_cos_apps: typing.Callable,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -221,6 +224,7 @@ async def test_loki_integration(
     assert: loki joins relation successfully, logs are being output to container and to files for
         loki to scrape.
     """
+    await deploy_cos_apps()
     await model.add_relation(loki_app_name, flask_app.name)
 
     await model.wait_for_idle(
@@ -246,6 +250,7 @@ async def test_grafana_integration(
     prometheus_app_name: str,
     loki_app_name: str,
     grafana_app_name: str,
+    deploy_cos_apps: typing.Callable,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -253,6 +258,7 @@ async def test_grafana_integration(
     act: establish relations established with grafana charm.
     assert: grafana Flask dashboard can be found.
     """
+    await deploy_cos_apps()
     await model.relate(
         f"{prometheus_app_name}:grafana-source", f"{grafana_app_name}:grafana-source"
     )

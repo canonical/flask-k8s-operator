@@ -56,7 +56,7 @@ def grafana_app_name_fixture() -> str:
 
 @pytest_asyncio.fixture(scope="module", name="build_charm")
 async def build_charm_fixture(ops_test) -> str:
-    """Builds the charm and injects additional configurations into config.yaml.
+    """Build the charm and injects additional configurations into config.yaml.
 
     This fixture is designed to simulate a feature that is not yet available in charmcraft that
     allows for the modification of charm configurations during the build process.
@@ -99,9 +99,6 @@ async def flask_app_fixture(  # pylint: disable=too-many-arguments
     pytestconfig: Config,
     external_hostname: str,
     traefik_app_name: str,
-    prometheus_app_name: str,
-    loki_app_name: str,
-    grafana_app_name: str,
 ):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
@@ -122,20 +119,35 @@ async def flask_app_fixture(  # pylint: disable=too-many-arguments
             },
         ),
         model.wait_for_idle(apps=[app_name, traefik_app_name], raise_on_blocked=True),
-        model.deploy(
-            "prometheus-k8s",
-            application_name=prometheus_app_name,
-            channel="latest/edge",
-            trust=True,
-        ),
-        model.deploy(
-            "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
-        ),
-        model.deploy(
-            "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
-        ),
     )
     return deploy_result[0]
+
+
+@pytest_asyncio.fixture(scope="module", name="deploy_cos_apps")
+async def deploy_cos_fixture(  # pylint: disable=too-many-arguments
+    model: Model,
+    prometheus_app_name: str,
+    loki_app_name: str,
+    grafana_app_name: str,
+):
+    """Build and deploy the cos applications."""
+    async def deploy_cos_apps():
+        await asyncio.gather(
+            model.deploy(
+                "prometheus-k8s",
+                application_name=prometheus_app_name,
+                channel="latest/edge",
+                trust=True,
+            ),
+            model.deploy(
+                "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
+            ),
+            model.deploy(
+                "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
+            ),
+            model.wait_for_idle(raise_on_blocked=True),
+        )
+    return deploy_cos_apps
 
 
 async def model_fixture(ops_test: OpsTest) -> Model:
