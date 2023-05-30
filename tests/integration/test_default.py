@@ -15,8 +15,7 @@ async def test_sentinel_check(
     pytestconfig: Config,
     ops_test: OpsTest,
     model: Model,
-        get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
-
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
     arrange: none.
@@ -29,9 +28,7 @@ async def test_sentinel_check(
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
     app_name = "flask-sentinel"
-    await model.deploy(
-        charm, resources=resources, application_name=app_name, series="jammy"
-    )
+    await model.deploy(charm, resources=resources, application_name=app_name, series="jammy")
     await model.wait_for_idle(apps=[app_name], raise_on_blocked=True)
     for unit_ip in await get_unit_ips(app_name):
         resp = requests.get(f"http://{unit_ip}:8000", timeout=10)
