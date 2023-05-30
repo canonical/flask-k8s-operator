@@ -103,16 +103,18 @@ def test_database_uri_mocked(
     assert not databases.get_uris()
 
     # Create the databases mock with the relation data
-    databases = {}
+    _databases = {}
     for relation in relations:
         interface = relation["interface"]
         database_require = unittest.mock.MagicMock()
-        database_require.fetch_relation_data = unittest.mock.MagicMock(return_value={"data": relation["data"]})
+        database_require.fetch_relation_data = unittest.mock.MagicMock(
+            return_value={"data": relation["data"]}
+        )
         database_require.database = relation["data"].get("database", FLASK_DATABASE_NAME)
-        databases[interface] = database_require
+        _databases[interface] = database_require
 
     # Allowing protected access to test the output
     # pylint: disable=protected-access
-    databases._databases = databases
+    databases._databases = _databases
 
     assert databases.get_uris() == expected_output
