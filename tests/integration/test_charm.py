@@ -211,11 +211,7 @@ async def test_with_database(
     act: deploy the database and relate it to the charm.
     assert: requesting the charm should return a correct response
     """
-    db_app = await model.deploy(
-        db_name,
-        channel=db_channel,
-        trust=trust
-    )
+    db_app = await model.deploy(db_name, channel=db_channel, trust=trust)
     await model.wait_for_idle()
 
     await model.add_relation(flask_app.name, db_app.name)
