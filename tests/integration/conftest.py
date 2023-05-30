@@ -107,7 +107,7 @@ async def flask_app_fixture(  # pylint: disable=too-many-arguments
     app_name = "flask-k8s"
 
     resources = {
-        "flask-app-image": pytestconfig.getoption("--flask-app-image"),
+        "flask-app-image": pytestconfig.getoption("--test-flask-image"),
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
     deploy_result = await asyncio.gather(

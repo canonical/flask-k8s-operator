@@ -7,3 +7,4 @@
 def pytest_addoption(parser):
     """Define some command line options for integration and unit tests."""
     parser.addoption("--flask-app-image", action="store")
+    parser.addoption("--test-flask-image", action="store")
