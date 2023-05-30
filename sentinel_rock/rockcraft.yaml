@@ -1,0 +1,17 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+name: sentinel
+summary: A sentinel image acts as a placeholder for the OCI image resource on CharmHub.
+description: A sentinel image acts as a placeholder for the OCI image resource on CharmHub.
+version: "1.0"
+base: bare
+build-base: ubuntu:22.04
+license: Apache-2.0
+platforms:
+  amd64:
+
+parts:
+  create-sentinel-file:
+    plugin: nil
+    overlay-script: |
+      touch $CRAFT_OVERLAY/null
