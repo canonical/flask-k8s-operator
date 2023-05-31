@@ -194,7 +194,7 @@ async def test_prometheus_integration(
     model: Model,
     prometheus_app_name: str,
     flask_app: Application,
-    prometheus_apps,  # pylint: disable=unused-argument
+    prometheus_app,  # pylint: disable=unused-argument
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -215,7 +215,7 @@ async def test_loki_integration(
     model: Model,
     loki_app_name: str,
     flask_app: Application,
-    loki_apps,  # pylint: disable=unused-argument
+    loki_app,  # pylint: disable=unused-argument
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
