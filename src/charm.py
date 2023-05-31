@@ -127,7 +127,7 @@ class FlaskCharm(CharmBase):
         Returns:
             The pebble layer definition for flask application.
         """
-        environment = self._flask_app.flask_environment
+        environment = self._flask_app.flask_environment()
         try:
             environment.update(self._databases.get_uris())
         except InvalidDatabaseRelationDataError as exc:

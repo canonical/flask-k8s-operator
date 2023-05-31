@@ -27,7 +27,7 @@ def test_flask_env(flask_config: dict):
     """
     charm_state = CharmState(flask_config=flask_config)
     flask_app = FlaskApp(charm_state=charm_state)
-    assert flask_app.flask_environment == {
+    assert flask_app.flask_environment() == {
         f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": v if isinstance(v, str) else json.dumps(v)
         for k, v in flask_config.items()
     }

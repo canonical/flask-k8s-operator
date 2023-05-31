@@ -23,7 +23,6 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         """
         self._charm_state = charm_state
 
-    @property
     def flask_environment(self) -> dict[str, str]:
         """Generate a Flask environment dictionary from the charm Flask configurations.
 
