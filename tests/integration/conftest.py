@@ -105,10 +105,10 @@ async def flask_app_fixture(
         "flask-app-image": pytestconfig.getoption("--flask-app-image"),
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
-    app = await asyncio.gather(
-        model.deploy(build_charm, resources=resources, application_name=app_name, series="jammy"),
-        model.wait_for_idle(raise_on_blocked=True),
+    app = await model.deploy(
+        build_charm, resources=resources, application_name=app_name, series="jammy"
     )
+    await model.wait_for_idle(raise_on_blocked=True)
     return app
 
 
@@ -120,18 +120,16 @@ async def deploy_traefik_fixture(
     external_hostname: str,
 ):
     """Deploy traefik."""
-    app = await asyncio.gather(
-        model.deploy(
-            "traefik-k8s",
-            application_name=traefik_app_name,
-            trust=True,
-            config={
-                "external_hostname": external_hostname,
-                "routing_mode": "subdomain",
-            },
-        ),
-        model.wait_for_idle(raise_on_blocked=True),
+    app = await model.deploy(
+        "traefik-k8s",
+        application_name=traefik_app_name,
+        trust=True,
+        config={
+            "external_hostname": external_hostname,
+            "routing_mode": "subdomain",
+        },
     )
+    await model.wait_for_idle(raise_on_blocked=True)
 
     return app
 
@@ -142,15 +140,13 @@ async def deploy_prometheus_fixture(
     prometheus_app_name: str,
 ):
     """Deploy prometheus."""
-    app = await asyncio.gather(
-        model.deploy(
-            "prometheus-k8s",
-            application_name=prometheus_app_name,
-            channel="latest/edge",
-            trust=True,
-        ),
-        model.wait_for_idle(raise_on_blocked=True),
+    app = await model.deploy(
+        "prometheus-k8s",
+        application_name=prometheus_app_name,
+        channel="latest/edge",
+        trust=True,
     )
+    await model.wait_for_idle(raise_on_blocked=True)
 
     return app
 
@@ -161,12 +157,10 @@ async def deploy_loki_fixture(
     loki_app_name: str,
 ):
     """Deploy loki."""
-    app = await asyncio.gather(
-        model.deploy(
-            "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
-        ),
-        model.wait_for_idle(raise_on_blocked=True),
+    app = await model.deploy(
+        "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
     )
+    await model.wait_for_idle(raise_on_blocked=True)
 
     return app
 
