@@ -93,12 +93,10 @@ async def build_charm_fixture(ops_test) -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="flask_app")
-async def flask_app_fixture(  # pylint: disable=too-many-arguments
+async def flask_app_fixture(
     build_charm: str,
     model: Model,
     pytestconfig: Config,
-    external_hostname: str,
-    traefik_app_name: str,
 ):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
@@ -107,8 +105,22 @@ async def flask_app_fixture(  # pylint: disable=too-many-arguments
         "flask-app-image": pytestconfig.getoption("--flask-app-image"),
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
-    deploy_result = await asyncio.gather(
+    app = await asyncio.gather(
         model.deploy(build_charm, resources=resources, application_name=app_name, series="jammy"),
+        model.wait_for_idle(raise_on_blocked=True),
+    )
+    return app
+
+
+@pytest_asyncio.fixture(scope="module", name="traefik_app")
+async def deploy_traefik_fixture(
+    model: Model,
+    flask_app,  # pylint: disable=unused-argument
+    traefik_app_name: str,
+    external_hostname: str,
+):
+    """Deploy traefik."""
+    app = await asyncio.gather(
         model.deploy(
             "traefik-k8s",
             application_name=traefik_app_name,
@@ -118,29 +130,56 @@ async def flask_app_fixture(  # pylint: disable=too-many-arguments
                 "routing_mode": "subdomain",
             },
         ),
-        model.wait_for_idle(apps=[app_name, traefik_app_name], raise_on_blocked=True),
+        model.wait_for_idle(raise_on_blocked=True),
     )
-    return deploy_result[0]
+
+    return app
 
 
-@pytest_asyncio.fixture(scope="module", name="cos_apps")
-async def deploy_cos_fixture(  # pylint: disable=too-many-arguments
+@pytest_asyncio.fixture(scope="module", name="prometheus_app")
+async def deploy_prometheus_fixture(
     model: Model,
     prometheus_app_name: str,
-    loki_app_name: str,
-    grafana_app_name: str,
 ):
-    """Deploy the cos applications."""
-    cos_apps = await asyncio.gather(
+    """Deploy prometheus."""
+    app = await asyncio.gather(
         model.deploy(
             "prometheus-k8s",
             application_name=prometheus_app_name,
             channel="latest/edge",
             trust=True,
         ),
+        model.wait_for_idle(raise_on_blocked=True),
+    )
+
+    return app
+
+
+@pytest_asyncio.fixture(scope="module", name="loki_app")
+async def deploy_loki_fixture(
+    model: Model,
+    loki_app_name: str,
+):
+    """Deploy loki."""
+    app = await asyncio.gather(
         model.deploy(
             "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
         ),
+        model.wait_for_idle(raise_on_blocked=True),
+    )
+
+    return app
+
+
+@pytest_asyncio.fixture(scope="module", name="cos_apps")
+async def deploy_cos_fixture(
+    model: Model,
+    loki_app,  # pylint: disable=unused-argument
+    prometheus_app,  # pylint: disable=unused-argument
+    grafana_app_name: str,
+):
+    """Deploy the cos applications."""
+    cos_apps = await asyncio.gather(
         model.deploy(
             "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
         ),

@@ -166,6 +166,7 @@ async def test_with_ingress(
     ops_test: OpsTest,
     model: Model,
     flask_app: Application,
+    traefik_app,  # pylint: disable=unused-argument
     traefik_app_name: str,
     external_hostname: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
@@ -193,7 +194,7 @@ async def test_prometheus_integration(
     model: Model,
     prometheus_app_name: str,
     flask_app: Application,
-    cos_apps,  # pylint: disable=unused-argument
+    prometheus_apps,  # pylint: disable=unused-argument
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
@@ -214,7 +215,7 @@ async def test_loki_integration(
     model: Model,
     loki_app_name: str,
     flask_app: Application,
-    cos_apps,  # pylint: disable=unused-argument
+    loki_apps,  # pylint: disable=unused-argument
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
