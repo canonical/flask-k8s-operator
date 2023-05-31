@@ -9,11 +9,7 @@ from constants import FLASK_ENV_CONFIG_PREFIX
 
 
 class FlaskApp:  # pylint: disable=too-few-public-methods
-    """A class representing the Flask application.
-
-    Attrs:
-        flask_environment: a Flask environment dictionary from the charm Flask configurations.
-    """
+    """A class representing the Flask application."""
 
     def __init__(self, charm_state: CharmState):
         """Initialize a new instance of the FlaskApp class.
