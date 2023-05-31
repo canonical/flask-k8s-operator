@@ -12,7 +12,12 @@ import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 from ops.charm import CharmBase
 
-from constants import FLASK_CONTAINER_NAME, FLASK_DATABASE_NAME, FLASK_SERVICE_NAME
+from constants import (
+    FLASK_CONTAINER_NAME,
+    FLASK_DATABASE_NAME,
+    FLASK_SERVICE_NAME,
+    FLASK_SUPPORTED_DB_INTERFACES,
+)
 from exceptions import InvalidDatabaseRelationDataError, PebbleNotReadyError
 
 logger = logging.getLogger(__name__)
@@ -40,7 +45,9 @@ class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
 
         metadata = yaml.safe_load(pathlib.Path("metadata.yaml").read_text(encoding="utf-8"))
         self._db_interfaces = (
-            name for name in list(metadata["requires"]) if name.startswith("db_")
+            FLASK_SUPPORTED_DB_INTERFACES[require["interface"]]
+            for require in metadata["requires"].values()
+            if require["interface"] in FLASK_SUPPORTED_DB_INTERFACES
         )
 
         self._databases: typing.Dict[str, DatabaseRequires] = {
