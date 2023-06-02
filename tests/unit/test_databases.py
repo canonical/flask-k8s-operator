@@ -19,7 +19,7 @@ from databases import Databases
         (
             (
                 {
-                    "interface": "db_mysql",
+                    "interface": "mysql",
                     "data": {
                         "endpoints": "test-mysql:3306",
                         "password": "test-password",
@@ -36,7 +36,7 @@ from databases import Databases
         (
             (
                 {
-                    "interface": "db_postgresql",
+                    "interface": "postgresql",
                     "data": {
                         "database": "test-database",
                         "endpoints": "test-postgresql:5432,test-postgresql-2:5432",
@@ -55,7 +55,7 @@ from databases import Databases
         (
             (
                 {
-                    "interface": "db_mysql",
+                    "interface": "mysql",
                     "data": {
                         "endpoints": "test-mysql:3306",
                         "password": "test-password",
@@ -63,7 +63,7 @@ from databases import Databases
                     },
                 },
                 {
-                    "interface": "db_postgresql",
+                    "interface": "postgresql",
                     "data": {
                         "database": "test-database",
                         "endpoints": "test-postgresql:5432,test-postgresql-2:5432",

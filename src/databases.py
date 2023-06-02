@@ -71,7 +71,14 @@ class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
             return
         plan = container.get_plan()
         if FLASK_SERVICE_NAME in plan.services:
-            plan.services[FLASK_SERVICE_NAME].environment.update(self.get_uris())
+            flask_service = plan.services[FLASK_SERVICE_NAME].to_dict()
+            flask_service["environment"].update(self.get_uris())
+            new_layer = {
+                "services": {
+                    FLASK_SERVICE_NAME: flask_service,
+                },
+            }
+            container.add_layer("flask-app", new_layer, combine=True)
         container.replan()
 
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:
@@ -136,8 +143,8 @@ class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
 
             database_name = data.get("database", db_requires.database)
             endpoint = data["endpoints"].split(",")[0]
-            db_uris[f"{interface_name[3:].upper()}_DB_CONNECT_STRING"] = (
-                f"{interface_name[3:]}://"
+            db_uris[f"{interface_name.upper()}_DB_CONNECT_STRING"] = (
+                f"{interface_name}://"
                 f"{data['username']}:{data['password']}"
                 f"@{endpoint}/{database_name}"
             )

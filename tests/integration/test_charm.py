@@ -195,7 +195,7 @@ async def test_with_ingress(
     "endpoint,db_name, db_channel, trust",
     [
         ("mysql/status", "mysql-k8s", "8.0/stable", True),
-        ("postgresql/status", "postgresql-k8s", "14/stable", False),
+        ("postgresql/status", "postgresql-k8s", "14/stable", True),
     ],
 )
 async def test_with_database(
@@ -213,7 +213,8 @@ async def test_with_database(
     assert: requesting the charm should return a correct response
     """
     db_app = await model.deploy(db_name, channel=db_channel, trust=trust)
-    await model.wait_for_idle()
+    # mypy doesn't see that ActiveStatus has a name
+    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
 
     await model.add_relation(flask_app.name, db_app.name)
 
