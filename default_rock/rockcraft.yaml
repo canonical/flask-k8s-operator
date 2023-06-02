@@ -1,8 +1,8 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 name: flask-app
-summary: A flask sample app
-description: OCI image for the sample flask app
+summary: Default Flask application image.
+description: Default Flask application image.
 version: "0.1"
 base: bare
 build-base: ubuntu:22.04

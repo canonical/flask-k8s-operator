@@ -3,8 +3,6 @@
 
 """Flask charm unit tests."""
 
-# pylint: disable=protected-access
-
 import yaml
 from ops.testing import Harness
 
