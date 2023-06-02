@@ -8,7 +8,6 @@ app = Flask(__name__)
 app.config.from_prefixed_env()
 
 
-
 @app.route("/")
 def hello_world():
     return "Hello, World!"
@@ -24,3 +23,12 @@ def sleep():
 @app.route("/config/<config_name>")
 def config(config_name: str):
     return jsonify(app.config.get(config_name))
+
+
+app2 = Flask("app2")
+app2.config.from_prefixed_env()
+
+
+@app2.route("/")
+def app2_hello_world():
+    return "Hello, Many World!"
