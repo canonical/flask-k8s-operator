@@ -8,10 +8,10 @@ import json
 import logging
 import typing
 
+import juju
 import pytest
 import requests
 from juju.application import Application
-from juju.model import Model
 from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 async def test_flask_is_up(
-    flask_app: Application, get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]]
+    flask_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
     """
     arrange: build and deploy the flask charm.
@@ -164,7 +165,7 @@ async def test_app_config(
 
 async def test_with_ingress(
     ops_test: OpsTest,
-    model: Model,
+    model: juju.model.Model,
     flask_app: Application,
     traefik_app,  # pylint: disable=unused-argument
     traefik_app_name: str,
@@ -190,8 +191,44 @@ async def test_with_ingress(
     assert "Hello, World!" in response.text
 
 
+@pytest.mark.parametrize(
+    "endpoint,db_name, db_channel, trust",
+    [
+        ("mysql/status", "mysql-k8s", "8.0/stable", True),
+        ("postgresql/status", "postgresql-k8s", "14/stable", True),
+    ],
+)
+async def test_with_database(
+    flask_app: Application,
+    model: juju.model.Model,
+    get_unit_ips,
+    endpoint: str,
+    db_name: str,
+    db_channel: str,
+    trust: bool,
+):
+    """
+    arrange: build and deploy the flask charm.
+    act: deploy the database and relate it to the charm.
+    assert: requesting the charm should return a correct response
+    """
+    db_app = await model.deploy(db_name, channel=db_channel, trust=trust)
+    # mypy doesn't see that ActiveStatus has a name
+    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+
+    await model.add_relation(flask_app.name, db_app.name)
+
+    # mypy doesn't see that ActiveStatus has a name
+    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+
+    for unit_ip in await get_unit_ips(flask_app.name):
+        response = requests.get(f"http://{unit_ip}:8000/{endpoint}", timeout=5)
+        assert response.status_code == 200
+        assert "SUCCESS" == response.text
+
+
 async def test_prometheus_integration(
-    model: Model,
+    model: juju.model.Model,
     prometheus_app_name: str,
     flask_app: Application,
     prometheus_app,  # pylint: disable=unused-argument
@@ -212,7 +249,7 @@ async def test_prometheus_integration(
 
 
 async def test_loki_integration(
-    model: Model,
+    model: juju.model.Model,
     loki_app_name: str,
     flask_app: Application,
     loki_app,  # pylint: disable=unused-argument
@@ -244,7 +281,7 @@ async def test_loki_integration(
 
 
 async def test_grafana_integration(
-    model: Model,
+    model: juju.model.Model,
     flask_app: Application,
     prometheus_app_name: str,
     loki_app_name: str,

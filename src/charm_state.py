@@ -8,8 +8,6 @@ import itertools
 import pathlib
 import typing
 
-from ops.charm import CharmBase
-
 # pydantic is causing this no-name-in-module problem
 from pydantic import (  # pylint: disable=no-name-in-module
     BaseModel,
@@ -21,6 +19,9 @@ from pydantic import (  # pylint: disable=no-name-in-module
 
 from charm_types import WebserverConfig
 from exceptions import CharmConfigInvalidError
+
+if typing.TYPE_CHECKING:
+    from charm import FlaskCharm
 
 KNOWN_CHARM_CONFIG = (
     "flask_application_root",
@@ -130,7 +131,7 @@ class CharmState:
         self._app_config = app_config if app_config is not None else {}
 
     @classmethod
-    def from_charm(cls, charm: CharmBase) -> "CharmState":
+    def from_charm(cls, charm: "FlaskCharm") -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
         Args:
