@@ -152,7 +152,7 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         if current_webserver_config == self._config:
             return
         config_check_result = self._exec(
-            self._check_config_command, environment=self._flask_app.flask_environment
+            self._check_config_command, environment=self._flask_app.flask_environment()
         )
         if config_check_result.exit_code:
             logger.error(
