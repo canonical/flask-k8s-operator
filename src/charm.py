@@ -38,11 +38,12 @@ class FlaskCharm(CharmBase):
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(BlockedStatus(exc.msg))
             return
+        self._flask_app = FlaskApp(charm_state=self._charm_state)
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
+            flask_app=self._flask_app,
         )
-        self._flask_app = FlaskApp(charm_state=self._charm_state)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(
             self.on.statsd_prometheus_exporter_pebble_ready,
