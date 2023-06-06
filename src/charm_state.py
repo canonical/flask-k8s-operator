@@ -35,6 +35,7 @@ KNOWN_CHARM_CONFIG = (
     "webserver_threads",
     "webserver_timeout",
     "webserver_workers",
+    "webserver_wsgi_path",
 )
 
 
@@ -102,6 +103,7 @@ class CharmState:
         webserver_threads: int | None = None,
         webserver_keepalive: int | None = None,
         webserver_timeout: int | None = None,
+        webserver_wsgi_path: str | None = None,
     ):
         """Initialize a new instance of the CharmState class.
 
@@ -116,11 +118,15 @@ class CharmState:
                 or None if not specified.
             webserver_timeout: The request silence timeout for the web server,
                 or None if not specified.
+            webserver_wsgi_path: The WSGI application path, or None if not specified.
         """
         self._webserver_workers = webserver_workers
         self._webserver_threads = webserver_threads
         self._webserver_keepalive = webserver_keepalive
         self._webserver_timeout = webserver_timeout
+        self._webserver_wsgi_path = (
+            webserver_wsgi_path if webserver_wsgi_path is not None else "app:app"
+        )
         self._flask_config = flask_config if flask_config is not None else {}
         self._app_config = app_config if app_config is not None else {}
 
@@ -162,6 +168,7 @@ class CharmState:
             webserver_threads=int(threads) if threads is not None else None,
             webserver_keepalive=int(keepalive) if keepalive is not None else None,
             webserver_timeout=int(timeout) if timeout is not None else None,
+            webserver_wsgi_path=charm.config.get("webserver_wsgi_path"),
         )
 
     @property
@@ -227,7 +234,7 @@ class CharmState:
         Returns:
             The path to the Flask WSGI application.
         """
-        return "app:app"
+        return self._webserver_wsgi_path
 
     @property
     def flask_port(self) -> int:

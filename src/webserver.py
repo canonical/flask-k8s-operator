@@ -15,6 +15,7 @@ from charm_state import CharmState
 from charm_types import ExecResult
 from constants import FLASK_SERVICE_NAME
 from exceptions import CharmConfigInvalidError
+from flask_app import FlaskApp
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +28,17 @@ class GunicornWebserver:
 
     """
 
-    def __init__(self, charm_state: CharmState, flask_container: Container):
+    def __init__(self, charm_state: CharmState, flask_container: Container, flask_app: FlaskApp):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:
             charm_state: The state of the charm that the GunicornWebserver instance belongs to.
             flask_container: The Flask container in this charm unit.
+            flask_app: The Flask application instance.
         """
         self._charm_state = charm_state
         self._flask_container = flask_container
+        self._flask_app = flask_app
 
     @property
     def _config(self) -> str:
@@ -108,19 +111,20 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         """
         return signal.SIGHUP
 
-    def _exec(self, command: list[str]) -> ExecResult:
+    def _exec(self, command: list[str], environment: dict[str, str] | None = None) -> ExecResult:
         """Execute a command inside the Flask workload container.
 
         The command will be executed with user flask group flask inside the container.
 
         Args:
             command: A list of strings representing the command to be executed.
+            environment: Environment variables for the command to be executed.
 
         Returns:
             ExecResult: An `ExecResult` object representing the result of the command execution.
         """
         container = self._flask_container
-        exec_process = container.exec(command)
+        exec_process = container.exec(command, environment=environment)
         try:
             stdout, stderr = exec_process.wait_output()
             return ExecResult(0, typing.cast(str, stdout), typing.cast(str, stderr))
@@ -147,7 +151,9 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         self._flask_container.push(webserver_config_path, self._config)
         if current_webserver_config == self._config:
             return
-        config_check_result = self._exec(self._check_config_command)
+        config_check_result = self._exec(
+            self._check_config_command, environment=self._flask_app.flask_environment()
+        )
         if config_check_result.exit_code:
             logger.error(
                 "webserver configuration check failed, stdout: %s, stderr: %s",

@@ -58,3 +58,7 @@ options:
   webserver_workers:
     type: int
     description: The number of webserver worker processes for handling requests.
+  webserver_wsgi_path:
+    type: string
+    default: "app:app"
+    description: The WSGI application path. By default, it's set to "app:app".

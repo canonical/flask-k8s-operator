@@ -93,3 +93,13 @@ def postgresql_status():
             cursor.fetchone()
             return "SUCCESS"
     return "FAIL"
+
+
+app2 = Flask("app2")
+app2.config.from_prefixed_env()
+
+
+@app2.route("/")
+def app2_hello_world():
+    return "Hello, Many World!"
+

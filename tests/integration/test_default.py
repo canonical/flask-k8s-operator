@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Integration tests for flask-k8s charm sentinel check."""
+"""Integration tests for flask-k8s charm default image."""
 
 import typing
 
@@ -11,7 +11,7 @@ from pytest import Config
 from pytest_operator.plugin import OpsTest
 
 
-async def test_sentinel_check(
+async def test_default_image(
     pytestconfig: Config,
     ops_test: OpsTest,
     model: Model,
