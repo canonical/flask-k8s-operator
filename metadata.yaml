@@ -30,6 +30,10 @@ resources:
     auto-fetch: true
     upstream-source: prom/statsd-exporter
 
+peers:
+  secret-storage:
+    interface: secret-storage
+
 provides:
   metrics-endpoint:
     interface: prometheus_scrape

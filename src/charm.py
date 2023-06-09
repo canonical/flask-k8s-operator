@@ -5,6 +5,7 @@
 """Flask Charm service."""
 
 import logging
+import secrets
 import shlex
 import typing
 
@@ -23,6 +24,7 @@ from exceptions import (
 )
 from flask_app import FlaskApp
 from observability import Observability
+from secret_storage import FlaskSecretStorage, SecretStorage
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -44,7 +46,10 @@ class FlaskCharm(CharmBase):
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(BlockedStatus(exc.msg))
             return
-        self._flask_app = FlaskApp(charm_state=self._charm_state)
+        self._flask_secret_storage = FlaskSecretStorage(charm=self)
+        self._flask_app = FlaskApp(
+            charm_state=self._charm_state, flask_secret_storage=self._flask_secret_storage
+        )
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
@@ -110,6 +115,10 @@ class FlaskCharm(CharmBase):
             container = self.container()
         except PebbleNotReadyError:
             logger.info("pebble client in the Flask container is not ready, defer config-changed")
+            event.defer()
+            return
+        if not self._flask_secret_storage.ready():
+            logger.info("flask secret storage is not ready, defer config-changed")
             event.defer()
             return
         container.add_layer("flask-app", self.flask_layer(), combine=True)

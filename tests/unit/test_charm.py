@@ -17,7 +17,11 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     act: start the flask charm and set flask-app container to be ready.
     assert: flask charm should submit the correct flaks pebble layer to pebble.
     """
+    harness.set_leader()
     harness.begin_with_initial_hooks()
+    harness.add_relation("secret-storage", harness.charm.app.name)
+    harness.add_relation_unit(1, harness.charm.unit.name)
+    harness.framework.reemit()
     harness.set_can_connect(harness.model.unit.containers["flask-app"], True)
     harness.framework.reemit()
     flask_layer = harness.get_container_pebble_plan("flask-app").to_dict()["services"]["flask-app"]

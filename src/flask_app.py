@@ -6,18 +6,21 @@ import json
 
 from charm_state import KNOWN_CHARM_CONFIG, CharmState
 from constants import FLASK_ENV_CONFIG_PREFIX
+from secret_storage import FlaskSecretStorage
 
 
 class FlaskApp:  # pylint: disable=too-few-public-methods
     """A class representing the Flask application."""
 
-    def __init__(self, charm_state: CharmState):
+    def __init__(self, charm_state: CharmState, flask_secret_storage: FlaskSecretStorage):
         """Initialize a new instance of the FlaskApp class.
 
         Args:
             charm_state: The state of the charm that the FlaskApp instance belongs to.
+            flask_secret_storage: The charm secret storage manager.
         """
         self._charm_state = charm_state
+        self._flask_secret_storage = flask_secret_storage
 
     def flask_environment(self) -> dict[str, str]:
         """Generate a Flask environment dictionary from the charm Flask configurations.
@@ -40,7 +43,11 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             k: v for k, v in self._charm_state.app_config.items() if k not in builtin_flask_config
         }
         flask_env.update(self._charm_state.flask_config)
-        return {
+        flask_env = {
             f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": v if isinstance(v, str) else json.dumps(v)
             for k, v in flask_env.items()
         }
+        secret_key_env = f"{FLASK_ENV_CONFIG_PREFIX}SECRET_KEY"
+        if secret_key_env not in flask_env:
+            flask_env[secret_key_env] = self._flask_secret_storage.get_secret_key()
+        return flask_env
