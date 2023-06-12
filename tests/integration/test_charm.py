@@ -67,6 +67,23 @@ async def test_flask_webserver_timeout(
             )
 
 
+async def test_default_secret_key(
+    flask_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: build and deploy the flask charm.
+    act: query flask secret key from the Flask server.
+    assert: flask should have a default and secure secret configured.
+    """
+    secret_keys = [
+        requests.get(f"http://{unit_ip}:8000/config/SECRET_KEY", timeout=10).json()
+        for unit_ip in await get_unit_ips(flask_app.name)
+    ]
+    assert len(set(secret_keys)) == 1
+    assert len(secret_keys[0]) > 10
+
+
 @pytest.mark.parametrize(
     "update_config, excepted_config",
     [
@@ -77,6 +94,9 @@ async def test_flask_webserver_timeout(
             id="permanent_session_lifetime",
         ),
         pytest.param({"flask_debug": True}, {"DEBUG": True}, id="debug"),
+        pytest.param(
+            {"flask_secret_key": "foobar"}, {"FLASK_SECRET_KEY": "foobar"}, id="secret_key"
+        ),
     ],
     indirect=["update_config"],
 )
