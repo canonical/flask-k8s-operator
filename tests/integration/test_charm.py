@@ -95,7 +95,7 @@ async def test_default_secret_key(
         ),
         pytest.param({"flask_debug": True}, {"DEBUG": True}, id="debug"),
         pytest.param(
-            {"flask_secret_key": "foobar"}, {"FLASK_SECRET_KEY": "foobar"}, id="secret_key"
+            {"flask_secret_key": "foobar"}, {"SECRET_KEY": "foobar"}, id="secret_key"
         ),
     ],
     indirect=["update_config"],
