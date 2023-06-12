@@ -148,7 +148,7 @@ class FlaskCharm(CharmBase):
         """Configure the flask pebble service layer.
 
         Args:
-            event: the config-changed event that trigger this callback function.
+            event: the config-changed event that triggers this callback function.
         """
         if not self._is_precondition_satisfied:
             logger.info("charm hasn't finished the initialization, defer config-changed")
