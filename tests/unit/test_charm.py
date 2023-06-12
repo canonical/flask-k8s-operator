@@ -21,6 +21,9 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     harness.set_can_connect(harness.model.unit.containers["flask-app"], True)
     harness.framework.reemit()
     flask_layer = harness.get_container_pebble_plan("flask-app").to_dict()["services"]["flask-app"]
+    flask_secret_key = flask_layer["environment"]["FLASK_SECRET_KEY"]
+    assert len(flask_secret_key) > 10
+    del flask_layer["environment"]["FLASK_SECRET_KEY"]
     assert flask_layer == {
         "override": "replace",
         "summary": "Flask application service",

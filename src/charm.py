@@ -23,6 +23,7 @@ from exceptions import (
 )
 from flask_app import FlaskApp
 from observability import Observability
+from secret_storage import SecretStorage
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,10 @@ class FlaskCharm(CharmBase):
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(BlockedStatus(exc.msg))
             return
-        self._flask_app = FlaskApp(charm_state=self._charm_state)
+        self._secret_storage = SecretStorage(charm=self)
+        self._flask_app = FlaskApp(
+            charm_state=self._charm_state, secret_storage=self._secret_storage
+        )
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
@@ -100,18 +104,38 @@ class FlaskCharm(CharmBase):
         container = self.unit.get_container(FLASK_CONTAINER_NAME)
         return container
 
+    @property
+    def _is_precondition_satisfied(self) -> bool:
+        """Check if the precondition for the Flask application has been satisfied.
+
+        Preconditions include:
+            1. Flask workload container is ready
+            2. Secret storage has been initialized
+
+        Return:
+            True if all preconditions is satisfied.
+        """
+        try:
+            self.container()
+        except PebbleNotReadyError:
+            logger.info("pebble client in the Flask container is not ready")
+            return False
+        if not self._secret_storage.is_initialized():
+            logger.info("secret storage is not initialized, defer config-changed")
+            return False
+        return True
+
     def _on_config_changed(self, event: ConfigChangedEvent) -> None:
         """Configure the flask pebble service layer.
 
         Args:
             event: the config-changed event that trigger this callback function.
         """
-        try:
-            container = self.container()
-        except PebbleNotReadyError:
-            logger.info("pebble client in the Flask container is not ready, defer config-changed")
+        if not self._is_precondition_satisfied:
+            logger.info("charm hasn't finished the initialization, defer config-changed")
             event.defer()
             return
+        container = self.container()
         container.add_layer("flask-app", self.flask_layer(), combine=True)
         is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         try:
