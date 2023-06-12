@@ -3,6 +3,11 @@
 
 """Flask charm unit tests."""
 
+# this is a unit test file
+# pylint: disable=protected-access
+
+import unittest.mock
+
 import yaml
 from ops.testing import Harness
 
@@ -42,3 +47,23 @@ def test_known_charm_config():
     with open("config.yaml", encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
     assert sorted(config["options"].keys()) == sorted(KNOWN_CHARM_CONFIG)
+
+
+def test_rotate_secret_key_action(harness: Harness):
+    """
+    arrange: none
+    act: invoke the rotate-secret-key callback function
+    assert: the action should change the secret key value in the relation data and restart the
+        flask application with the new secret key.
+    """
+    harness.begin_with_initial_hooks()
+    action_event = unittest.mock.MagicMock()
+    secret_key = harness.get_relation_data(0, harness.charm.app)["flask_secret_key"]
+    assert secret_key
+    harness.charm._on_rotate_secret_key_action(action_event)
+    new_secret_key = harness.get_relation_data(0, harness.charm.app)["flask_secret_key"]
+    assert secret_key != new_secret_key
+    pebble_plan = harness.get_container_pebble_plan("flask-app").to_dict()
+    assert (
+        new_secret_key == pebble_plan["services"]["flask-app"]["environment"]["FLASK_SECRET_KEY"]
+    )

@@ -13,7 +13,11 @@ if typing.TYPE_CHECKING:
 
 
 class SecretStorage(Object):
-    """A class that manages secret keys required by the FlaskCharm."""
+    """A class that manages secret keys required by the FlaskCharm.
+
+    Attrs:
+        is_initialized: True if the SecretStorage has been initialized.
+    """
 
     # bandit think this is a password
     _FLASK_SECRET_KEY_KEY = "flask_secret_key"  # nosec
@@ -45,6 +49,7 @@ class SecretStorage(Object):
             secret_key = secrets.token_urlsafe(32)
             relation_data[self._FLASK_SECRET_KEY_KEY] = secret_key
 
+    @property
     def is_initialized(self) -> bool:
         """Check if the SecretStorage has been initialized.
 
@@ -68,7 +73,7 @@ class SecretStorage(Object):
         Raises:
             RuntimeError: If SecretStorage is not initialized.
         """
-        if not self.is_initialized():
+        if not self.is_initialized:
             raise RuntimeError("SecretStorage is not initialized")
         relation = typing.cast(Relation, self._charm.model.get_relation(self._PEER_RELATION_NAME))
         data = relation.data[self._charm.app]

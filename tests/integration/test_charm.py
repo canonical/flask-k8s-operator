@@ -183,6 +183,31 @@ async def test_app_config(
             )
 
 
+async def test_rotate_secret_key(
+    model: juju.model.Model,
+    flask_app: Application,
+    get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
+):
+    """
+    arrange: build and deploy the flask charm.
+    act: run rotate-secret-key action on the leader unit.
+    assert: Flask applications on every unit should have a new secret key configured.
+    """
+    unit_ips = await get_unit_ips(flask_app.name)
+    secret_key = requests.get(f"http://{unit_ips[0]}:8000/config/SECRET_KEY", timeout=10).json()
+    leader_unit = [u for u in flask_app.units if await u.is_leader_from_status()][0]
+    action = await leader_unit.run_action("rotate-secret-key")
+    await action.wait()
+    assert action.results["status"] == "success"
+    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    for unit_ip in unit_ips:
+        new_secret_key = requests.get(
+            f"http://{unit_ip}:8000/config/SECRET_KEY", timeout=10
+        ).json()
+        assert len(new_secret_key) > 10
+        assert new_secret_key != secret_key
+
+
 async def test_with_ingress(
     ops_test: OpsTest,
     model: juju.model.Model,
