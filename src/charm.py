@@ -40,15 +40,14 @@ class FlaskCharm(CharmBase):
         """
         super().__init__(*args)
         self._databases = Databases(charm=self)
+        secret_storage = SecretStorage(charm=self)
+
         try:
-            self._charm_state = CharmState.from_charm(charm=self)
+            self._charm_state = CharmState.from_charm(charm=self, secret_storage=secret_storage)
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(BlockedStatus(exc.msg))
             return
-        self._secret_storage = SecretStorage(charm=self)
-        self._flask_app = FlaskApp(
-            charm_state=self._charm_state, secret_storage=self._secret_storage
-        )
+        self._flask_app = FlaskApp(charm_state=self._charm_state)
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
@@ -123,7 +122,7 @@ class FlaskCharm(CharmBase):
         except PebbleNotReadyError:
             logger.info("pebble client in the Flask container is not ready")
             return False
-        if not self._secret_storage.is_initialized:
+        if not self._charm_state.secret_storage.is_initialized:
             logger.info("secret storage is not initialized, defer config-changed")
             return False
         return True
@@ -219,7 +218,7 @@ class FlaskCharm(CharmBase):
         if not self._is_precondition_satisfied:
             event.fail("flask charm is still initializing")
             return
-        self._secret_storage.reset_flask_secret_key()
+        self._charm_state.secret_storage.reset_flask_secret_key()
         event.set_results({"status": "success"})
         self._restart_flask_application()
 
