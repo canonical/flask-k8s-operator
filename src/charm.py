@@ -9,9 +9,18 @@ import shlex
 import typing
 
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
-from ops.charm import ActionEvent, CharmBase, ConfigChangedEvent, PebbleReadyEvent
+from ops import (
+    ActionEvent,
+    ActiveStatus,
+    BlockedStatus,
+    CharmBase,
+    Container,
+    EventBase,
+    PebbleReadyEvent,
+    RelationEvent,
+    StatusBase,
+)
 from ops.main import main
-from ops.model import ActiveStatus, BlockedStatus, Container, StatusBase
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
@@ -143,7 +152,7 @@ class FlaskCharm(CharmBase):
         container.replan()
         self._update_app_and_unit_status(ActiveStatus())
 
-    def _on_config_changed(self, event: ConfigChangedEvent) -> None:
+    def _on_config_changed(self, event: EventBase) -> None:
         """Configure the flask pebble service layer.
 
         Args:
@@ -221,6 +230,14 @@ class FlaskCharm(CharmBase):
         self._charm_state.secret_storage.reset_flask_secret_key()
         event.set_results({"status": "success"})
         self._restart_flask_application()
+
+    def _secret_storage_relation_changed(self, event: RelationEvent) -> None:
+        """Handle the secret-storage-relation-changed event.
+
+        Args:
+            event: the action event that trigger this callback.
+        """
+        self._on_config_changed(event)
 
 
 if __name__ == "__main__":  # pragma: nocover

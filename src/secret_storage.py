@@ -6,10 +6,7 @@
 import secrets
 import typing
 
-from ops import Object, Relation, RelationDataContent, RelationEvent
-
-if typing.TYPE_CHECKING:
-    from charm import FlaskCharm
+from ops import CharmBase, Object, Relation, RelationDataContent, RelationEvent
 
 
 class SecretStorage(Object):
@@ -23,7 +20,7 @@ class SecretStorage(Object):
     _FLASK_SECRET_KEY_KEY = "flask_secret_key"  # nosec
     _PEER_RELATION_NAME = "secret-storage"
 
-    def __init__(self, charm: "FlaskCharm"):
+    def __init__(self, charm: CharmBase):
         """Initialize the SecretStorage with a given FlaskCharm object.
 
         Args:
