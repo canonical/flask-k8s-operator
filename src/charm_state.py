@@ -84,7 +84,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
     """Represents the state of the Flask charm.
 
     Attrs:
-        secret_storage: The secret storage manager associated with the charm.
         webserver_config: the web server configuration file content for the charm.
         flask_config: the value of the flask_config charm configuration.
         app_config: user-defined configurations for the Flask application.
@@ -95,6 +94,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         flask_access_log: the file path for the Flask access log.
         flask_error_log: the file path for the Flask error log.
         flask_statsd_host: the statsd server host for Flask metrics.
+        flask_secret_key: the charm managed flask secret key.
     """
 
     def __init__(
@@ -125,7 +125,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                 or None if not specified.
             webserver_wsgi_path: The WSGI application path, or None if not specified.
         """
-        self.secret_storage = secret_storage
+        self._secret_storage = secret_storage
         self._webserver_workers = webserver_workers
         self._webserver_threads = webserver_threads
         self._webserver_keepalive = webserver_keepalive
@@ -279,3 +279,14 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             The statsd server host for Flask metrics.
         """
         return "localhost:9125"
+
+    @property
+    def flask_secret_key(self) -> str:
+        """Return the flask secret key stored in the SecretStorage.
+
+        It's an error to read the secret key before SecretStorage is initialized.
+
+        Returns:
+            The flask secret key stored in the SecretStorage.
+        """
+        return self._secret_storage.get_flask_secret_key()

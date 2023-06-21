@@ -46,5 +46,5 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         }
         secret_key_env = f"{FLASK_ENV_CONFIG_PREFIX}SECRET_KEY"
         if secret_key_env not in env:
-            env[secret_key_env] = self._charm_state.secret_storage.get_flask_secret_key()
+            env[secret_key_env] = self._charm_state.flask_secret_key
         return env

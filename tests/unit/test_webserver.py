@@ -69,7 +69,7 @@ def test_gunicorn_config(
     container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     charm_state = CharmState(
-        secret_storage=harness.charm._charm_state.secret_storage, **charm_state_params
+        secret_storage=harness.charm._charm_state._secret_storage, **charm_state_params
     )
     flask_app = FlaskApp(
         charm_state=charm_state,
@@ -94,7 +94,7 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running):
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     container.push(f"{FLASK_BASE_DIR}/gunicorn.conf.py", "")
     charm_state = CharmState(
-        secret_storage=harness.charm._charm_state.secret_storage, flask_config={}
+        secret_storage=harness.charm._charm_state._secret_storage, flask_config={}
     )
     flask_app = FlaskApp(charm_state=charm_state)
     webserver = GunicornWebserver(

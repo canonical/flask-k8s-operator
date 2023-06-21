@@ -32,7 +32,7 @@ def test_flask_env(harness: Harness, flask_config: dict):
     """
     harness.begin_with_initial_hooks()
     charm_state = CharmState(
-        secret_storage=harness.charm._charm_state.secret_storage, flask_config=flask_config
+        secret_storage=harness.charm._charm_state._secret_storage, flask_config=flask_config
     )
     flask_app = FlaskApp(charm_state=charm_state)
     env = flask_app.flask_environment()
