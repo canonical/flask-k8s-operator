@@ -19,6 +19,7 @@ from pydantic import (  # pylint: disable=no-name-in-module
 
 from charm_types import WebserverConfig
 from exceptions import CharmConfigInvalidError
+from secret_storage import SecretStorage
 
 if typing.TYPE_CHECKING:
     from charm import FlaskCharm
@@ -78,7 +79,8 @@ class FlaskConfig(BaseModel, extra=Extra.allow):  # pylint: disable=too-few-publ
         return value.upper()
 
 
-class CharmState:
+# too-many-instance-attributes is okay since we use a factory function to construct the CharmState
+class CharmState:  # pylint: disable=too-many-instance-attributes
     """Represents the state of the Flask charm.
 
     Attrs:
@@ -92,10 +94,12 @@ class CharmState:
         flask_access_log: the file path for the Flask access log.
         flask_error_log: the file path for the Flask error log.
         flask_statsd_host: the statsd server host for Flask metrics.
+        flask_secret_key: the charm managed flask secret key.
     """
 
     def __init__(
         self,
+        secret_storage: SecretStorage,
         *,
         flask_config: dict[str, int | str] | None = None,
         app_config: dict[str, int | str | bool] | None = None,
@@ -108,6 +112,7 @@ class CharmState:
         """Initialize a new instance of the CharmState class.
 
         Args:
+            secret_storage: The secret storage manager associated with the charm.
             flask_config: The value of the flask_config charm configuration.
             app_config: User-defined configuration values for the Flask configuration.
             webserver_workers: The number of workers to use for the web server,
@@ -120,6 +125,7 @@ class CharmState:
                 or None if not specified.
             webserver_wsgi_path: The WSGI application path, or None if not specified.
         """
+        self._secret_storage = secret_storage
         self._webserver_workers = webserver_workers
         self._webserver_threads = webserver_threads
         self._webserver_keepalive = webserver_keepalive
@@ -131,11 +137,12 @@ class CharmState:
         self._app_config = app_config if app_config is not None else {}
 
     @classmethod
-    def from_charm(cls, charm: "FlaskCharm") -> "CharmState":
+    def from_charm(cls, charm: "FlaskCharm", secret_storage: SecretStorage) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
         Args:
             charm: The charm instance associated with this state.
+            secret_storage: The secret storage manager associated with the charm.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -162,6 +169,7 @@ class CharmState:
             error_field_str = " ".join(f"flask_{f}" for f in error_fields)
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
         return cls(
+            secret_storage=secret_storage,
             flask_config=valid_flask_config.dict(exclude_unset=True, exclude_none=True),
             app_config=typing.cast(dict[str, str | int | bool], app_config),
             webserver_workers=int(workers) if workers is not None else None,
@@ -271,3 +279,14 @@ class CharmState:
             The statsd server host for Flask metrics.
         """
         return "localhost:9125"
+
+    @property
+    def flask_secret_key(self) -> str:
+        """Return the flask secret key stored in the SecretStorage.
+
+        It's an error to read the secret key before SecretStorage is initialized.
+
+        Returns:
+            The flask secret key stored in the SecretStorage.
+        """
+        return self._secret_storage.get_flask_secret_key()

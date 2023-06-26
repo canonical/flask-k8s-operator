@@ -36,6 +36,10 @@ provides:
   grafana-dashboard:
     interface: grafana_dashboard
 
+peers:
+  secret-storage:
+    interface: secret-storage
+
 requires:
   ingress:
     interface: ingress

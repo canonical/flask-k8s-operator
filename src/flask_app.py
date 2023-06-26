@@ -40,7 +40,11 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             k: v for k, v in self._charm_state.app_config.items() if k not in builtin_flask_config
         }
         flask_env.update(self._charm_state.flask_config)
-        return {
+        env = {
             f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": v if isinstance(v, str) else json.dumps(v)
             for k, v in flask_env.items()
         }
+        secret_key_env = f"{FLASK_ENV_CONFIG_PREFIX}SECRET_KEY"
+        if secret_key_env not in env:
+            env[secret_key_env] = self._charm_state.flask_secret_key
+        return env
