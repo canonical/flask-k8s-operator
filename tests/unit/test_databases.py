@@ -5,8 +5,8 @@
 
 import unittest.mock
 
+import ops
 import pytest
-from ops.model import Container
 from ops.testing import Harness
 
 from constants import FLASK_CONTAINER_NAME, FLASK_DATABASE_NAME
@@ -92,7 +92,7 @@ def test_database_uri_mocked(
     act: start the flask charm, set flask-app container to be ready and relate it to the db.
     assert: get_uris() should return the correct databaseURI dict
     """
-    container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
 

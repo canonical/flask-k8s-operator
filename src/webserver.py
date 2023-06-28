@@ -8,7 +8,7 @@ import pathlib
 import signal
 import typing
 
-from ops import Container
+import ops
 from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
@@ -27,7 +27,9 @@ class GunicornWebserver:
 
     """
 
-    def __init__(self, charm_state: CharmState, flask_container: Container, flask_app: FlaskApp):
+    def __init__(
+        self, charm_state: CharmState, flask_container: ops.Container, flask_app: FlaskApp
+    ):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:

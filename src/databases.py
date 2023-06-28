@@ -7,9 +7,9 @@ import logging
 import pathlib
 import typing
 
+import ops
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
-from ops import CharmBase, Object
 
 from constants import (
     FLASK_CONTAINER_NAME,
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # We need to derive from ops.framework.Object to subscribe to callbacks
 # from ops.framework. See: https://github.com/canonical/operator/blob/main/ops/framework.py#L782
-class Databases(Object):  # pylint: disable=too-few-public-methods
+class Databases(ops.Object):  # pylint: disable=too-few-public-methods
     """A class handling databases relations and state.
 
     Attrs:
@@ -32,7 +32,7 @@ class Databases(Object):  # pylint: disable=too-few-public-methods
         _databases: A dict of DatabaseRequires to store relations
     """
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: ops.CharmBase):
         """Initialize a new instance of the Databases class.
 
         Args:

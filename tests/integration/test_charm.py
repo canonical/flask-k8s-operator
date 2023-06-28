@@ -9,10 +9,10 @@ import logging
 import typing
 
 import juju
+import ops
 import pytest
 import requests
 from juju.application import Application
-from ops.model import ActiveStatus
 from pytest_operator.plugin import OpsTest
 
 # caused by pytest fixtures
@@ -197,7 +197,7 @@ async def test_rotate_secret_key(
     action = await leader_unit.run_action("rotate-secret-key")
     await action.wait()
     assert action.results["status"] == "success"
-    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.ActiveStatus.name)  # type: ignore
     for unit_ip in unit_ips:
         new_secret_key = requests.get(
             f"http://{unit_ip}:8000/config/SECRET_KEY", timeout=10
@@ -222,7 +222,7 @@ async def test_with_ingress(
     """
     await model.add_relation(flask_app.name, traefik_app_name)
     # mypy doesn't see that ActiveStatus has a name
-    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.ActiveStatus.name)  # type: ignore
 
     traefik_ip = (await get_unit_ips(traefik_app_name))[0]
     response = requests.get(
@@ -257,12 +257,12 @@ async def test_with_database(
     """
     db_app = await model.deploy(db_name, channel=db_channel, trust=trust)
     # mypy doesn't see that ActiveStatus has a name
-    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.ActiveStatus.name)  # type: ignore
 
     await model.add_relation(flask_app.name, db_app.name)
 
     # mypy doesn't see that ActiveStatus has a name
-    await model.wait_for_idle(status=ActiveStatus.name)  # type: ignore
+    await model.wait_for_idle(status=ops.ActiveStatus.name)  # type: ignore
 
     for unit_ip in await get_unit_ips(flask_app.name):
         response = requests.get(f"http://{unit_ip}:8000/{endpoint}", timeout=5)

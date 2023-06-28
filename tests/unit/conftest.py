@@ -7,8 +7,8 @@
 
 import typing
 
+import ops
 import pytest
-from ops.model import Container
 from ops.pebble import ExecError
 from ops.testing import Harness
 
@@ -63,7 +63,7 @@ def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Ha
         return ExecProcessStub(command=command, exit_code=exit_code, stdout=stdout, stderr=stderr)
 
     def register_command_handler(
-        container: Container | str,
+        container: ops.Container | str,
         executable: str,
         handler=typing.Callable[[list[str]], typing.Tuple[int, str, str]],
     ):
@@ -86,7 +86,7 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
     """Ops testing framework harness fixture."""
     harness = Harness(FlaskCharm)
     harness.set_leader()
-    flask_container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    flask_container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     flask_container.make_dir("/srv/flask", make_parents=True)
 
