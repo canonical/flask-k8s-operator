@@ -13,8 +13,21 @@ from ops.pebble import ExecError
 from ops.testing import Harness
 
 from charm import FlaskCharm
-from charm_types import ExecResult
 from constants import FLASK_CONTAINER_NAME
+
+
+class ExecResult(typing.NamedTuple):
+    """A named tuple representing the result of executing a command.
+
+    Attributes:
+        exit_code: The exit status of the command (0 for success, non-zero for failure).
+        stdout: The standard output of the command as a string.
+        stderr: The standard error output of the command as a string.
+    """
+
+    exit_code: int
+    stdout: str
+    stderr: str
 
 
 def inject_register_command_handler(monkeypatch: pytest.MonkeyPatch, harness: Harness):

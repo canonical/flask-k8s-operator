@@ -93,14 +93,6 @@ class FlaskCharm(CharmBase):
         if self.unit.is_leader():
             self.app.status = status
 
-    def container_can_connect(self) -> bool:
-        """Check if the Flask pebble service is connectable.
-
-        Returns:
-            True if the Flask pebble service is connectable, False otherwise.
-        """
-        return self.unit.get_container(FLASK_CONTAINER_NAME).can_connect()
-
     def container(self) -> Container:
         """Get the flask application workload container controller.
 
@@ -111,7 +103,7 @@ class FlaskCharm(CharmBase):
             PebbleNotReadyError: if the pebble service inside the container is not ready while the
                 ``require_connected`` is set to True.
         """
-        if not self.container_can_connect():
+        if not self.unit.get_container(FLASK_CONTAINER_NAME).can_connect():
             raise PebbleNotReadyError("pebble inside flask-app container is not ready")
 
         container = self.unit.get_container(FLASK_CONTAINER_NAME)

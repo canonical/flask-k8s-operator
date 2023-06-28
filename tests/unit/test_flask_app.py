@@ -15,14 +15,16 @@ from charm_state import CharmState
 from constants import FLASK_ENV_CONFIG_PREFIX
 from flask_app import FlaskApp
 
+FLASK_ENV_TEST_PARAMS = [
+    pytest.param({"env": "test"}, id="env"),
+    pytest.param({"permanent_session_lifetime": 1}, id="permanent_session_lifetime"),
+    pytest.param({"debug": True}, id="debug"),
+]
+
 
 @pytest.mark.parametrize(
     "flask_config",
-    [
-        pytest.param({"env": "test"}, id="env"),
-        pytest.param({"permanent_session_lifetime": 1}, id="permanent_session_lifetime"),
-        pytest.param({"debug": True}, id="debug"),
-    ],
+    FLASK_ENV_TEST_PARAMS,
 )
 def test_flask_env(harness: Harness, flask_config: dict):
     """

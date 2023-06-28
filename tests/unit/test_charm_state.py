@@ -12,28 +12,27 @@ from ops.testing import Harness
 from charm_state import CharmState
 from exceptions import CharmConfigInvalidError
 
+CHARM_STATE_FLASK_CONFIG_TEST_PARAMS = [
+    pytest.param(
+        {"flask_env": "prod"}, {"env": "prod", "preferred_url_scheme": "HTTPS"}, id="env"
+    ),
+    pytest.param(
+        {"flask_debug": True}, {"debug": True, "preferred_url_scheme": "HTTPS"}, id="debug"
+    ),
+    pytest.param(
+        {"flask_secret_key": "1234"},
+        {"secret_key": "1234", "preferred_url_scheme": "HTTPS"},
+        id="secret_key",
+    ),
+    pytest.param(
+        {"flask_preferred_url_scheme": "http"},
+        {"preferred_url_scheme": "HTTP"},
+        id="preferred_url_scheme",
+    ),
+]
 
-@pytest.mark.parametrize(
-    "charm_config, flask_config",
-    [
-        pytest.param(
-            {"flask_env": "prod"}, {"env": "prod", "preferred_url_scheme": "HTTPS"}, id="env"
-        ),
-        pytest.param(
-            {"flask_debug": True}, {"debug": True, "preferred_url_scheme": "HTTPS"}, id="debug"
-        ),
-        pytest.param(
-            {"flask_secret_key": "1234"},
-            {"secret_key": "1234", "preferred_url_scheme": "HTTPS"},
-            id="secret_key",
-        ),
-        pytest.param(
-            {"flask_preferred_url_scheme": "http"},
-            {"preferred_url_scheme": "HTTP"},
-            id="preferred_url_scheme",
-        ),
-    ],
-)
+
+@pytest.mark.parametrize("charm_config, flask_config", CHARM_STATE_FLASK_CONFIG_TEST_PARAMS)
 def test_charm_state_flask_config(
     harness: Harness, charm_config: dict, flask_config: dict
 ) -> None:
@@ -50,17 +49,17 @@ def test_charm_state_flask_config(
     assert charm_state.flask_config == flask_config
 
 
-@pytest.mark.parametrize(
-    "charm_config",
-    [
-        pytest.param({"flask_env": ""}, id="env"),
-        pytest.param({"flask_secret_key": ""}, id="secret_key"),
-        pytest.param(
-            {"flask_preferred_url_scheme": "tls"},
-            id="preferred_url_scheme",
-        ),
-    ],
-)
+CHARM_STATE_INVALID_FLASK_CONFIG_TEST_PARAMS = [
+    pytest.param({"flask_env": ""}, id="env"),
+    pytest.param({"flask_secret_key": ""}, id="secret_key"),
+    pytest.param(
+        {"flask_preferred_url_scheme": "tls"},
+        id="preferred_url_scheme",
+    ),
+]
+
+
+@pytest.mark.parametrize("charm_config", CHARM_STATE_INVALID_FLASK_CONFIG_TEST_PARAMS)
 def test_charm_state_invalid_flask_config(harness: Harness, charm_config: dict) -> None:
     """
     arrange: none
@@ -77,13 +76,13 @@ def test_charm_state_invalid_flask_config(harness: Harness, charm_config: dict) 
         assert config_key in exc.value.msg
 
 
-@pytest.mark.parametrize(
-    "charm_config, wsgi_path",
-    [
-        pytest.param({}, "app:app", id="default"),
-        pytest.param({"webserver_wsgi_path": "foo.bar:app2"}, "foo.bar:app2", id="non-default"),
-    ],
-)
+CHARM_STATE_WSGI_PATH_TEST_PARAMS = [
+    pytest.param({}, "app:app", id="default"),
+    pytest.param({"webserver_wsgi_path": "foo.bar:app2"}, "foo.bar:app2", id="non-default"),
+]
+
+
+@pytest.mark.parametrize("charm_config, wsgi_path", CHARM_STATE_WSGI_PATH_TEST_PARAMS)
 def test_charm_state_wsgi_path(harness: Harness, charm_config: dict, wsgi_path: str) -> None:
     """
     arrange: none.

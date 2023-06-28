@@ -20,27 +20,24 @@ from webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/srv/flask"
 
-
-@pytest.mark.parametrize(
-    "charm_state_params, config_file",
-    [
-        pytest.param(
-            {"webserver_workers": 10},
-            textwrap.dedent(
-                f"""\
+GUNICORN_CONFIG_TEST_PARAMS = [
+    pytest.param(
+        {"webserver_workers": 10},
+        textwrap.dedent(
+            f"""\
                 bind = ['0.0.0.0:8000']
                 chdir = '{FLASK_BASE_DIR}/app'
                 accesslog = '/var/log/flask/access.log'
                 errorlog = '/var/log/flask/error.log'
                 statsd_host = 'localhost:9125'
                 workers = 10"""
-            ),
-            id="workers=10",
         ),
-        pytest.param(
-            {"webserver_threads": 2, "webserver_timeout": 3, "webserver_keepalive": 4},
-            textwrap.dedent(
-                f"""\
+        id="workers=10",
+    ),
+    pytest.param(
+        {"webserver_threads": 2, "webserver_timeout": 3, "webserver_keepalive": 4},
+        textwrap.dedent(
+            f"""\
                 bind = ['0.0.0.0:8000']
                 chdir = '{FLASK_BASE_DIR}/app'
                 accesslog = '/var/log/flask/access.log'
@@ -49,11 +46,13 @@ FLASK_BASE_DIR = "/srv/flask"
                 threads = 2
                 keepalive = 4
                 timeout = 3"""
-            ),
-            id="threads=2,timeout=3,keepalive=4",
         ),
-    ],
-)
+        id="threads=2,timeout=3,keepalive=4",
+    ),
+]
+
+
+@pytest.mark.parametrize("charm_state_params, config_file", GUNICORN_CONFIG_TEST_PARAMS)
 def test_gunicorn_config(
     harness: Harness,
     charm_state_params,
