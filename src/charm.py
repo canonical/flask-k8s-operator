@@ -71,7 +71,9 @@ class FlaskCharm(ops.CharmBase):
             self._on_statsd_prometheus_exporter_pebble_ready,
         )
         self.framework.observe(self.on.rotate_secret_key_action, self._on_rotate_secret_key_action)
-        self.framework.observe(self.on.secret_storage_relation_changed, self._on_config_changed)
+        self.framework.observe(
+            self.on.secret_storage_relation_changed, self._on_secret_storage_relation_changed
+        )
 
     def _update_app_and_unit_status(self, status: ops.StatusBase) -> None:
         """Update the application and unit status.
@@ -215,7 +217,7 @@ class FlaskCharm(ops.CharmBase):
         event.set_results({"status": "success"})
         self._restart_flask_application()
 
-    def _secret_storage_relation_changed(self, event: ops.RelationEvent) -> None:
+    def _on_secret_storage_relation_changed(self, event: ops.RelationEvent) -> None:
         """Handle the secret-storage-relation-changed event.
 
         Args:
