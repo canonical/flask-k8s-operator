@@ -49,6 +49,8 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
             if require["interface"] in FLASK_SUPPORTED_DB_INTERFACES
         )
         # automatically create database relation requirers to manage database relations
+        # one database relation requirer is required for each of the database relations
+        # create a dictionary to hold the requirers
         self._databases: typing.Dict[str, DatabaseRequires] = {
             name: self._setup_database_requirer(name, FLASK_DATABASE_NAME)
             for name in self._db_interfaces
