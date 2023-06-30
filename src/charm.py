@@ -8,18 +8,8 @@ import logging
 import shlex
 import typing
 
+import ops
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
-from ops import (
-    ActionEvent,
-    ActiveStatus,
-    BlockedStatus,
-    CharmBase,
-    Container,
-    EventBase,
-    PebbleReadyEvent,
-    RelationEvent,
-    StatusBase,
-)
 from ops.main import main
 
 from charm_state import CharmState
@@ -38,7 +28,7 @@ from webserver import GunicornWebserver
 logger = logging.getLogger(__name__)
 
 
-class FlaskCharm(CharmBase):
+class FlaskCharm(ops.CharmBase):
     """Flask Charm service."""
 
     def __init__(self, *args: typing.Any) -> None:
@@ -56,7 +46,7 @@ class FlaskCharm(CharmBase):
                 charm=self, secret_storage=self._secret_storage
             )
         except CharmConfigInvalidError as exc:
-            self._update_app_and_unit_status(BlockedStatus(exc.msg))
+            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             return
         self._flask_app = FlaskApp(charm_state=self._charm_state)
         self._webserver = GunicornWebserver(
@@ -81,9 +71,11 @@ class FlaskCharm(CharmBase):
             self._on_statsd_prometheus_exporter_pebble_ready,
         )
         self.framework.observe(self.on.rotate_secret_key_action, self._on_rotate_secret_key_action)
-        self.framework.observe(self.on.secret_storage_relation_changed, self._on_config_changed)
+        self.framework.observe(
+            self.on.secret_storage_relation_changed, self._on_secret_storage_relation_changed
+        )
 
-    def _update_app_and_unit_status(self, status: StatusBase) -> None:
+    def _update_app_and_unit_status(self, status: ops.StatusBase) -> None:
         """Update the application and unit status.
 
         Args:
@@ -93,15 +85,7 @@ class FlaskCharm(CharmBase):
         if self.unit.is_leader():
             self.app.status = status
 
-    def container_can_connect(self) -> bool:
-        """Check if the Flask pebble service is connectable.
-
-        Returns:
-            True if the Flask pebble service is connectable, False otherwise.
-        """
-        return self.unit.get_container(FLASK_CONTAINER_NAME).can_connect()
-
-    def container(self) -> Container:
+    def container(self) -> ops.Container:
         """Get the flask application workload container controller.
 
         Return:
@@ -111,7 +95,7 @@ class FlaskCharm(CharmBase):
             PebbleNotReadyError: if the pebble service inside the container is not ready while the
                 ``require_connected`` is set to True.
         """
-        if not self.container_can_connect():
+        if not self.unit.get_container(FLASK_CONTAINER_NAME).can_connect():
             raise PebbleNotReadyError("pebble inside flask-app container is not ready")
 
         container = self.unit.get_container(FLASK_CONTAINER_NAME)
@@ -149,12 +133,12 @@ class FlaskCharm(CharmBase):
         try:
             self._webserver.update_config(is_webserver_running=is_webserver_running)
         except CharmConfigInvalidError as exc:
-            self._update_app_and_unit_status(BlockedStatus(exc.msg))
+            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             return
         container.replan()
-        self._update_app_and_unit_status(ActiveStatus())
+        self._update_app_and_unit_status(ops.ActiveStatus())
 
-    def _on_config_changed(self, event: EventBase) -> None:
+    def _on_config_changed(self, event: ops.EventBase) -> None:
         """Configure the flask pebble service layer.
 
         Args:
@@ -176,7 +160,7 @@ class FlaskCharm(CharmBase):
         try:
             environment.update(self._databases.get_uris())
         except InvalidDatabaseRelationDataError as exc:
-            self._update_app_and_unit_status(BlockedStatus(exc.msg))
+            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             # Returning an empty dict will cancel add_layer() when used with combine=True
             return {}
         return {
@@ -191,7 +175,7 @@ class FlaskCharm(CharmBase):
             },
         }
 
-    def _on_statsd_prometheus_exporter_pebble_ready(self, _event: PebbleReadyEvent) -> None:
+    def _on_statsd_prometheus_exporter_pebble_ready(self, _event: ops.PebbleReadyEvent) -> None:
         """Handle the statsd-prometheus-exporter-pebble-ready event."""
         statsd_container = self.unit.get_container("statsd-prometheus-exporter")
         statsd_layer = {
@@ -217,7 +201,7 @@ class FlaskCharm(CharmBase):
         statsd_container.add_layer("statsd-prometheus-exporter", statsd_layer, combine=True)
         statsd_container.replan()
 
-    def _on_rotate_secret_key_action(self, event: ActionEvent) -> None:
+    def _on_rotate_secret_key_action(self, event: ops.ActionEvent) -> None:
         """Handle the rotate-secret-key action.
 
         Args:
@@ -233,7 +217,7 @@ class FlaskCharm(CharmBase):
         event.set_results({"status": "success"})
         self._restart_flask_application()
 
-    def _secret_storage_relation_changed(self, event: RelationEvent) -> None:
+    def _on_secret_storage_relation_changed(self, event: ops.RelationEvent) -> None:
         """Handle the secret-storage-relation-changed event.
 
         Args:

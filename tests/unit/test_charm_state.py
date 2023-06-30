@@ -12,28 +12,27 @@ from ops.testing import Harness
 from charm_state import CharmState
 from exceptions import CharmConfigInvalidError
 
+CHARM_STATE_FLASK_CONFIG_TEST_PARAMS = [
+    pytest.param(
+        {"flask_env": "prod"}, {"env": "prod", "preferred_url_scheme": "HTTPS"}, id="env"
+    ),
+    pytest.param(
+        {"flask_debug": True}, {"debug": True, "preferred_url_scheme": "HTTPS"}, id="debug"
+    ),
+    pytest.param(
+        {"flask_secret_key": "1234"},
+        {"secret_key": "1234", "preferred_url_scheme": "HTTPS"},
+        id="secret_key",
+    ),
+    pytest.param(
+        {"flask_preferred_url_scheme": "http"},
+        {"preferred_url_scheme": "HTTP"},
+        id="preferred_url_scheme",
+    ),
+]
 
-@pytest.mark.parametrize(
-    "charm_config, flask_config",
-    [
-        pytest.param(
-            {"flask_env": "prod"}, {"env": "prod", "preferred_url_scheme": "HTTPS"}, id="env"
-        ),
-        pytest.param(
-            {"flask_debug": True}, {"debug": True, "preferred_url_scheme": "HTTPS"}, id="debug"
-        ),
-        pytest.param(
-            {"flask_secret_key": "1234"},
-            {"secret_key": "1234", "preferred_url_scheme": "HTTPS"},
-            id="secret_key",
-        ),
-        pytest.param(
-            {"flask_preferred_url_scheme": "http"},
-            {"preferred_url_scheme": "HTTP"},
-            id="preferred_url_scheme",
-        ),
-    ],
-)
+
+@pytest.mark.parametrize("charm_config, flask_config", CHARM_STATE_FLASK_CONFIG_TEST_PARAMS)
 def test_charm_state_flask_config(
     harness: Harness, charm_config: dict, flask_config: dict
 ) -> None:

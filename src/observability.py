@@ -3,10 +3,10 @@
 
 """Provide the Observability class to represent the observability stack for Flask application."""
 
+import ops
 from charms.grafana_k8s.v0.grafana_dashboard import GrafanaDashboardProvider
 from charms.loki_k8s.v0.loki_push_api import LogProxyConsumer
 from charms.prometheus_k8s.v0.prometheus_scrape import MetricsEndpointProvider
-from ops import CharmBase
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
@@ -15,7 +15,7 @@ from constants import FLASK_CONTAINER_NAME
 class Observability:  # pylint: disable=too-few-public-methods
     """A class representing the observability stack for Flask application."""
 
-    def __init__(self, charm: CharmBase, charm_state: CharmState):
+    def __init__(self, charm: ops.CharmBase, charm_state: CharmState):
         """Initialize a new instance of the Observability class.
 
         Args:

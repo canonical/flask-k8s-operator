@@ -6,10 +6,10 @@
 import secrets
 import typing
 
-from ops import CharmBase, Object, Relation, RelationDataContent, RelationEvent
+import ops
 
 
-class SecretStorage(Object):
+class SecretStorage(ops.Object):
     """A class that manages secret keys required by the FlaskCharm.
 
     Attrs:
@@ -20,7 +20,7 @@ class SecretStorage(Object):
     _FLASK_SECRET_KEY_KEY = "flask_secret_key"  # nosec
     _PEER_RELATION_NAME = "secret-storage"
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: ops.CharmBase):
         """Initialize the SecretStorage with a given FlaskCharm object.
 
         Args:
@@ -33,7 +33,7 @@ class SecretStorage(Object):
             self._on_secret_storage_relation_created,
         )
 
-    def _on_secret_storage_relation_created(self, event: RelationEvent) -> None:
+    def _on_secret_storage_relation_created(self, event: ops.RelationEvent) -> None:
         """Handle the event when a new peer relation is created.
 
         Generates a new secret key and stores it within the relation's data.
@@ -61,7 +61,7 @@ class SecretStorage(Object):
         relation_data = relation.data[self._charm.app]
         return relation_data.get(self._FLASK_SECRET_KEY_KEY) is not None
 
-    def _get_relation_data(self) -> RelationDataContent:
+    def _get_relation_data(self) -> ops.RelationDataContent:
         """Retrieve the relation data associated with the FlaskCharm object.
 
         Returns:
@@ -72,7 +72,9 @@ class SecretStorage(Object):
         """
         if not self.is_initialized:
             raise RuntimeError("SecretStorage is not initialized")
-        relation = typing.cast(Relation, self._charm.model.get_relation(self._PEER_RELATION_NAME))
+        relation = typing.cast(
+            ops.Relation, self._charm.model.get_relation(self._PEER_RELATION_NAME)
+        )
         data = relation.data[self._charm.app]
         return data
 

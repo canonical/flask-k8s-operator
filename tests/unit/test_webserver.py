@@ -9,8 +9,8 @@
 import textwrap
 import unittest.mock
 
+import ops
 import pytest
-from ops.model import Container
 from ops.testing import Harness
 
 from charm_state import CharmState
@@ -20,27 +20,24 @@ from webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/srv/flask"
 
-
-@pytest.mark.parametrize(
-    "charm_state_params, config_file",
-    [
-        pytest.param(
-            {"webserver_workers": 10},
-            textwrap.dedent(
-                f"""\
+GUNICORN_CONFIG_TEST_PARAMS = [
+    pytest.param(
+        {"webserver_workers": 10},
+        textwrap.dedent(
+            f"""\
                 bind = ['0.0.0.0:8000']
                 chdir = '{FLASK_BASE_DIR}/app'
                 accesslog = '/var/log/flask/access.log'
                 errorlog = '/var/log/flask/error.log'
                 statsd_host = 'localhost:9125'
                 workers = 10"""
-            ),
-            id="workers=10",
         ),
-        pytest.param(
-            {"webserver_threads": 2, "webserver_timeout": 3, "webserver_keepalive": 4},
-            textwrap.dedent(
-                f"""\
+        id="workers=10",
+    ),
+    pytest.param(
+        {"webserver_threads": 2, "webserver_timeout": 3, "webserver_keepalive": 4},
+        textwrap.dedent(
+            f"""\
                 bind = ['0.0.0.0:8000']
                 chdir = '{FLASK_BASE_DIR}/app'
                 accesslog = '/var/log/flask/access.log'
@@ -49,11 +46,13 @@ FLASK_BASE_DIR = "/srv/flask"
                 threads = 2
                 keepalive = 4
                 timeout = 3"""
-            ),
-            id="threads=2,timeout=3,keepalive=4",
         ),
-    ],
-)
+        id="threads=2,timeout=3,keepalive=4",
+    ),
+]
+
+
+@pytest.mark.parametrize("charm_state_params, config_file", GUNICORN_CONFIG_TEST_PARAMS)
 def test_gunicorn_config(
     harness: Harness,
     charm_state_params,
@@ -66,7 +65,7 @@ def test_gunicorn_config(
     assert: gunicorn configuration file inside the flask app container should change accordingly.
     """
     harness.begin_with_initial_hooks()
-    container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     charm_state = CharmState(
         secret_storage=harness.charm._charm_state._secret_storage, **charm_state_params
@@ -90,7 +89,7 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running):
     assert: webserver object should send signal to the Gunicorn server based on the running status.
     """
     harness.begin_with_initial_hooks()
-    container: Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     container.push(f"{FLASK_BASE_DIR}/gunicorn.conf.py", "")
     charm_state = CharmState(

@@ -7,10 +7,9 @@ import logging
 import pathlib
 import typing
 
-import ops.framework
+import ops
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
-from ops.charm import CharmBase
 
 from constants import (
     FLASK_CONTAINER_NAME,
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # We need to derive from ops.framework.Object to subscribe to callbacks
 # from ops.framework. See: https://github.com/canonical/operator/blob/main/ops/framework.py#L782
-class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
+class Databases(ops.Object):  # pylint: disable=too-few-public-methods
     """A class handling databases relations and state.
 
     Attrs:
@@ -33,7 +32,7 @@ class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
         _databases: A dict of DatabaseRequires to store relations
     """
 
-    def __init__(self, charm: CharmBase):
+    def __init__(self, charm: ops.CharmBase):
         """Initialize a new instance of the Databases class.
 
         Args:
@@ -49,7 +48,9 @@ class Databases(ops.framework.Object):  # pylint: disable=too-few-public-methods
             for require in metadata["requires"].values()
             if require["interface"] in FLASK_SUPPORTED_DB_INTERFACES
         )
-
+        # automatically create database relation requirers to manage database relations
+        # one database relation requirer is required for each of the database relations
+        # create a dictionary to hold the requirers
         self._databases: typing.Dict[str, DatabaseRequires] = {
             name: self._setup_database_requirer(name, FLASK_DATABASE_NAME)
             for name in self._db_interfaces
