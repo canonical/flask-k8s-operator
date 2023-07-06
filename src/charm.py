@@ -9,6 +9,7 @@ import shlex
 import typing
 
 import ops
+from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.main import main
 
@@ -73,6 +74,16 @@ class FlaskCharm(ops.CharmBase):
         self.framework.observe(self.on.rotate_secret_key_action, self._on_rotate_secret_key_action)
         self.framework.observe(
             self.on.secret_storage_relation_changed, self._on_secret_storage_relation_changed
+        )
+        self._require_nginx_route()
+
+    def _require_nginx_route(self) -> None:
+        """Set up the requirer side of the nginx-route relation."""
+        require_nginx_route(
+            charm=self,
+            service_name=self.unit.name,
+            service_hostname=self.unit.name,
+            service_port=self._charm_state.flask_port,
         )
 
     def _update_app_and_unit_status(self, status: ops.StatusBase) -> None:

@@ -134,6 +134,20 @@ async def deploy_traefik_fixture(
     return app
 
 
+@pytest_asyncio.fixture(scope="module", name="nginx_ingress_integrator_app")
+async def deploy_nginx_ingress_integrator_fixture(
+    model: Model,
+):
+    """Deploy nginx-ingress-integrator."""
+    app = await model.deploy(
+        "nginx-ingress-integrator",
+        application_name="nginx-ingress-integrator",
+        trust=True,
+    )
+    await model.wait_for_idle(raise_on_blocked=True)
+    return app
+
+
 @pytest_asyncio.fixture(scope="module", name="prometheus_app")
 async def deploy_prometheus_fixture(
     model: Model,

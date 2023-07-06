@@ -234,6 +234,25 @@ async def test_with_ingress(
     assert "Hello, World!" in response.text
 
 
+async def test_nginx_route(
+    model: juju.model.Model,
+    flask_app: Application,
+    nginx_ingress_integrator_app: Application,
+):
+    """
+    arrange: build and deploy the flask charm, and deploy the nginx-ingress-integrator.
+    act: relate the nginx-ingress-integrator charm with the Flask charm.
+    assert: requesting the charm through nginx ingress should return a correct response
+    """
+    await model.add_relation(flask_app.name, nginx_ingress_integrator_app.name)
+    # mypy doesn't see that ActiveStatus has a name
+    await model.wait_for_idle(status=ops.ActiveStatus.name)  # type: ignore
+
+    response = requests.get("http://127.0.0.1", headers={"Host": flask_app.name}, timeout=5)
+    assert response.status_code == 200
+    assert "Hello, World!" in response.text
+
+
 @pytest.mark.parametrize(
     "endpoint,db_name, db_channel, trust",
     [

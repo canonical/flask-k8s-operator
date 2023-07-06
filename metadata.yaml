@@ -54,3 +54,5 @@ requires:
     optional: true
   logging:
     interface: loki_push_api
+  nginx-route:
+    interface: nginx-route
