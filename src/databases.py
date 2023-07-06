@@ -10,6 +10,7 @@ import typing
 import ops
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
+from ops.pebble import LayerDict
 
 from constants import (
     FLASK_CONTAINER_NAME,
@@ -74,7 +75,7 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         if FLASK_SERVICE_NAME in plan.services:
             flask_service = plan.services[FLASK_SERVICE_NAME].to_dict()
             flask_service["environment"].update(self.get_uris())
-            new_layer = {
+            new_layer: LayerDict = {
                 "services": {
                     FLASK_SERVICE_NAME: flask_service,
                 },

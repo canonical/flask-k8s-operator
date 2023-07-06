@@ -1,2 +1,5 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 ignore_files:
   - lib/charms/nginx_ingress_integrator/v0/nginx_route.py

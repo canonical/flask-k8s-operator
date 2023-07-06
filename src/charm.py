@@ -12,6 +12,7 @@ import ops
 from charms.nginx_ingress_integrator.v0.nginx_route import require_nginx_route
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.main import main
+from ops.pebble import LayerDict
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
@@ -161,7 +162,7 @@ class FlaskCharm(ops.CharmBase):
             return
         self._restart_flask_application()
 
-    def _flask_layer(self) -> dict:
+    def _flask_layer(self) -> LayerDict:
         """Generate the pebble layer definition for flask application.
 
         Returns:
@@ -189,7 +190,7 @@ class FlaskCharm(ops.CharmBase):
     def _on_statsd_prometheus_exporter_pebble_ready(self, _event: ops.PebbleReadyEvent) -> None:
         """Handle the statsd-prometheus-exporter-pebble-ready event."""
         statsd_container = self.unit.get_container("statsd-prometheus-exporter")
-        statsd_layer = {
+        statsd_layer: LayerDict = {
             "summary": "statsd exporter layer",
             "description": "statsd exporter layer",
             "services": {
