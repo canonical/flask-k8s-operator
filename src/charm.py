@@ -81,8 +81,8 @@ class FlaskCharm(ops.CharmBase):
         """Set up the requirer side of the nginx-route relation."""
         require_nginx_route(
             charm=self,
-            service_name=self.unit.name,
-            service_hostname=self.unit.name,
+            service_name=self.app.name,
+            service_hostname=self.app.name,
             service_port=self._charm_state.flask_port,
         )
 
