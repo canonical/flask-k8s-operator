@@ -150,7 +150,7 @@ class FlaskCharm(ops.CharmBase):
             return
         self._restart_flask_application()
 
-    def _flask_layer(self) -> dict:
+    def _flask_layer(self) -> ops.pebble.LayerDict:
         """Generate the pebble layer definition for flask application.
 
         Returns:
@@ -163,8 +163,8 @@ class FlaskCharm(ops.CharmBase):
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             # Returning an empty dict will cancel add_layer() when used with combine=True
             return {}
-        return {
-            "services": {
+        return ops.pebble.LayerDict(
+            services={
                 FLASK_SERVICE_NAME: {
                     "override": "replace",
                     "summary": "Flask application service",
@@ -173,15 +173,15 @@ class FlaskCharm(ops.CharmBase):
                     "environment": environment,
                 }
             },
-        }
+        )
 
     def _on_statsd_prometheus_exporter_pebble_ready(self, _event: ops.PebbleReadyEvent) -> None:
         """Handle the statsd-prometheus-exporter-pebble-ready event."""
         statsd_container = self.unit.get_container("statsd-prometheus-exporter")
-        statsd_layer = {
-            "summary": "statsd exporter layer",
-            "description": "statsd exporter layer",
-            "services": {
+        statsd_layer = ops.pebble.LayerDict(
+            summary="statsd exporter layer",
+            description="statsd exporter layer",
+            services={
                 "statsd-prometheus-exporter": {
                     "override": "replace",
                     "summary": "statsd exporter service",
@@ -190,14 +190,14 @@ class FlaskCharm(ops.CharmBase):
                     "startup": "enabled",
                 }
             },
-            "checks": {
+            checks={
                 "container-ready": {
                     "override": "replace",
                     "level": "ready",
                     "http": {"url": "http://localhost:9102/metrics"},
                 },
             },
-        }
+        )
         statsd_container.add_layer("statsd-prometheus-exporter", statsd_layer, combine=True)
         statsd_container.replan()
 

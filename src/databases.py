@@ -74,11 +74,11 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         if FLASK_SERVICE_NAME in plan.services:
             flask_service = plan.services[FLASK_SERVICE_NAME].to_dict()
             flask_service["environment"].update(self.get_uris())
-            new_layer = {
-                "services": {
+            new_layer = ops.pebble.LayerDict(
+                services={
                     FLASK_SERVICE_NAME: flask_service,
-                },
-            }
+                }
+            )
             container.add_layer("flask-app", new_layer, combine=True)
         container.replan()
 
