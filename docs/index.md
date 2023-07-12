@@ -35,3 +35,23 @@ fixes and constructive feedback.
 
 Thinking about using the Flask Operator for your next project?
 [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
+
+# Navigation
+
+[details=Mapping table]
+
+| Level | Path | Navlink |
+| -- | -- | -- |
+| 1 | tutorials | [Tutorials]() |
+| 2 | tutorials-getting-started | [Getting Started](/t/flask-k8s-charm-documentation-getting-started/10774) |
+| 1 | how-to| [How-to]() |
+| 2 | how-to-contribute | [Contribute](/t/flask-k8s-charm-documentation-contributing/10775) |
+
+[/details]
+
+# Redirects
+
+[details=Mapping table]
+| Path | Location |
+| - | - |
+[/details]
