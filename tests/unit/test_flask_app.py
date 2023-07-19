@@ -7,6 +7,7 @@
 # pylint: disable=protected-access
 
 import json
+import typing
 
 import pytest
 from ops.testing import Harness
@@ -43,3 +44,48 @@ def test_flask_env(harness: Harness, flask_config: dict):
         f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": v if isinstance(v, str) else json.dumps(v)
         for k, v in flask_config.items()
     }
+
+
+@pytest.mark.parametrize(
+    "set_environment_variable, expected",
+    [
+        pytest.param(
+            {"JUJU_CHARM_NO_PROXY": "127.0.0.1"}, {"no_proxy": "127.0.0.1"}, id="no_proxy"
+        ),
+        pytest.param(
+            {"JUJU_CHARM_HTTP_PROXY": "proxy.test"}, {"http_proxy": "proxy.test"}, id="http_proxy"
+        ),
+        pytest.param(
+            {"JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
+            {"https_proxy": "proxy.test"},
+            id="https_proxy",
+        ),
+        pytest.param(
+            {"JUJU_CHARM_HTTP_PROXY": "proxy.test", "JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
+            {"http_proxy": "proxy.test", "https_proxy": "proxy.test"},
+            id="http_https_proxy",
+        ),
+    ],
+    indirect=["set_environment_variable"],
+)
+@pytest.mark.usefixtures("set_environment_variable")
+def test_http_proxy(harness: Harness, expected: typing.Dict[str, str]):
+    """
+    arrange: set the juju charm http proxy related environment variables.
+    act: generate a flask environment.
+    assert: flask_environment generated should contain proper proxy environment variables.
+    """
+    harness.begin_with_initial_hooks()
+    charm_state = CharmState(
+        secret_storage=harness.charm._charm_state._secret_storage, flask_config={}
+    )
+    flask_app = FlaskApp(charm_state=charm_state)
+    env = flask_app.flask_environment()
+    expected_env: typing.Dict[str, typing.Optional[str]] = {
+        "http_proxy": None,
+        "https_proxy": None,
+        "no_proxy": None,
+    }
+    expected_env.update(expected)
+    for env_name, env_value in expected_env.items():
+        assert env.get(env_name) == env.get(env_name.upper()) == env_value
