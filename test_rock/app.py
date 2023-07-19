@@ -98,7 +98,7 @@ def postgresql_status():
 @app.route("/env")
 def get_env():
     """Return environment variables"""
-    return jsonify(os.environ)
+    return jsonify(dict(os.environ))
 
 
 app2 = Flask("app2")
