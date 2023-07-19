@@ -27,7 +27,7 @@ async def test_proxy(build_charm: str, model: Model, pytestconfig: Config, get_u
     await model.wait_for_idle(raise_on_blocked=True)
     unit_ips = await get_unit_ips(app_name)
     for unit_ip in unit_ips:
-        response = requests.get(f"http://{unit_ip}/env", timeout=5)
+        response = requests.get(f"http://{unit_ip}:8000/env", timeout=5)
         assert response.status_code == 200
         env = response.json()
         assert env["http_proxy"] == "http://proxy.test"
