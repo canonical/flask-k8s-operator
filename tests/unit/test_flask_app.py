@@ -8,6 +8,7 @@
 
 import json
 import typing
+import unittest.mock
 
 import pytest
 from ops.testing import Harness
@@ -46,39 +47,38 @@ def test_flask_env(harness: Harness, flask_config: dict):
     }
 
 
+HTTP_PROXY_TEST_PARAMS = [
+    pytest.param({}, {}, id="no_env"),
+    pytest.param({"JUJU_CHARM_NO_PROXY": "127.0.0.1"}, {"no_proxy": "127.0.0.1"}, id="no_proxy"),
+    pytest.param(
+        {"JUJU_CHARM_HTTP_PROXY": "proxy.test"}, {"http_proxy": "proxy.test"}, id="http_proxy"
+    ),
+    pytest.param(
+        {"JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
+        {"https_proxy": "proxy.test"},
+        id="https_proxy",
+    ),
+    pytest.param(
+        {"JUJU_CHARM_HTTP_PROXY": "proxy.test", "JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
+        {"http_proxy": "proxy.test", "https_proxy": "proxy.test"},
+        id="http_https_proxy",
+    ),
+]
+
+
 @pytest.mark.parametrize(
     "set_environment_variable, expected",
-    [
-        pytest.param(
-            {"JUJU_CHARM_NO_PROXY": "127.0.0.1"}, {"no_proxy": "127.0.0.1"}, id="no_proxy"
-        ),
-        pytest.param(
-            {"JUJU_CHARM_HTTP_PROXY": "proxy.test"}, {"http_proxy": "proxy.test"}, id="http_proxy"
-        ),
-        pytest.param(
-            {"JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
-            {"https_proxy": "proxy.test"},
-            id="https_proxy",
-        ),
-        pytest.param(
-            {"JUJU_CHARM_HTTP_PROXY": "proxy.test", "JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
-            {"http_proxy": "proxy.test", "https_proxy": "proxy.test"},
-            id="http_https_proxy",
-        ),
-    ],
+    HTTP_PROXY_TEST_PARAMS,
     indirect=["set_environment_variable"],
 )
 @pytest.mark.usefixtures("set_environment_variable")
-def test_http_proxy(harness: Harness, expected: typing.Dict[str, str]):
+def test_http_proxy(expected: typing.Dict[str, str]):
     """
-    arrange: set the juju charm http proxy related environment variables.
+    arrange: set juju charm http proxy related environment variables.
     act: generate a flask environment.
     assert: flask_environment generated should contain proper proxy environment variables.
     """
-    harness.begin_with_initial_hooks()
-    charm_state = CharmState(
-        secret_storage=harness.charm._charm_state._secret_storage, flask_config={}
-    )
+    charm_state = CharmState(secret_storage=unittest.mock.MagicMock(), flask_config={})
     flask_app = FlaskApp(charm_state=charm_state)
     env = flask_app.flask_environment()
     expected_env: typing.Dict[str, typing.Optional[str]] = {

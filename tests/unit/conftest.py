@@ -124,7 +124,11 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
 def set_environment_variable(request):
     """Set the environment variables."""
     environment_variables = request.param
+    before_env = dict(os.environ)
     os.environ.update(environment_variables)
     yield
-    for environment_variable in environment_variables:
-        del os.environ[environment_variable]
+    for env in os.environ:
+        if env not in before_env:
+            del os.environ[env]
+        else:
+            os.environ[env] = before_env[env]

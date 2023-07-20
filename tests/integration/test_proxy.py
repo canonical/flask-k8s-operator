@@ -12,11 +12,14 @@ from pytest import Config
 async def test_proxy(build_charm: str, model: Model, pytestconfig: Config, get_unit_ips):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
+    http_proxy = "http://proxy.test"
+    https_proxy = "http://https.proxy.test"
+    no_proxy = "127.0.0.1,10.0.0.1"
     await model.set_config(
         {
-            "juju-http-proxy": "http://proxy.test",
-            "juju-https-proxy": "http://proxy.test",
-            "juju-no-proxy": "127.0.0.1,10.0.0.1",
+            "juju-http-proxy": http_proxy,
+            "juju-https-proxy": https_proxy,
+            "juju-no-proxy": no_proxy,
         }
     )
     resources = {
@@ -30,9 +33,9 @@ async def test_proxy(build_charm: str, model: Model, pytestconfig: Config, get_u
         response = requests.get(f"http://{unit_ip}:8000/env", timeout=5)
         assert response.status_code == 200
         env = response.json()
-        assert env["http_proxy"] == "http://proxy.test"
-        assert env["HTTP_PROXY"] == "http://proxy.test"
-        assert env["https_proxy"] == "http://proxy.test"
-        assert env["HTTPS_PROXY"] == "http://proxy.test"
-        assert env["no_proxy"] == "127.0.0.1,10.0.0.1"
-        assert env["NO_PROXY"] == "127.0.0.1,10.0.0.1"
+        assert env["http_proxy"] == http_proxy
+        assert env["HTTP_PROXY"] == http_proxy
+        assert env["https_proxy"] == https_proxy
+        assert env["HTTPS_PROXY"] == https_proxy
+        assert env["no_proxy"] == no_proxy
+        assert env["NO_PROXY"] == no_proxy
