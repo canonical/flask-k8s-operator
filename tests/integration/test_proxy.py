@@ -6,10 +6,9 @@
 
 import requests
 from juju.model import Model
-from pytest import Config
 
 
-async def test_proxy(build_charm: str, model: Model, pytestconfig: Config, get_unit_ips):
+async def test_proxy(build_charm: str, model: Model, test_flask_image: str, get_unit_ips):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
     http_proxy = "http://proxy.test"
@@ -22,8 +21,9 @@ async def test_proxy(build_charm: str, model: Model, pytestconfig: Config, get_u
             "juju-no-proxy": no_proxy,
         }
     )
+    # not using the build_charm_fixture since we need to set model configs before deploy the charm
     resources = {
-        "flask-app-image": pytestconfig.getoption("--test-flask-image"),
+        "flask-app-image": test_flask_image,
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
     await model.deploy(build_charm, resources=resources, application_name=app_name, series="jammy")

@@ -67,17 +67,17 @@ HTTP_PROXY_TEST_PARAMS = [
 
 
 @pytest.mark.parametrize(
-    "set_environment_variable, expected",
+    "set_env, expected",
     HTTP_PROXY_TEST_PARAMS,
-    indirect=["set_environment_variable"],
 )
-@pytest.mark.usefixtures("set_environment_variable")
-def test_http_proxy(expected: typing.Dict[str, str]):
+def test_http_proxy(set_env: typing.Dict[str, str], expected: typing.Dict[str, str], monkeypatch):
     """
     arrange: set juju charm http proxy related environment variables.
     act: generate a flask environment.
     assert: flask_environment generated should contain proper proxy environment variables.
     """
+    for set_env_name, set_env_value in set_env.items():
+        monkeypatch.setenv(set_env_name, set_env_value)
     charm_state = CharmState(secret_storage=unittest.mock.MagicMock(), flask_config={})
     flask_app = FlaskApp(charm_state=charm_state)
     env = flask_app.flask_environment()

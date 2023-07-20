@@ -5,7 +5,6 @@
 
 # pylint: disable=protected-access,too-few-public-methods
 
-import os
 import typing
 
 import ops
@@ -118,17 +117,3 @@ def harness_fixture(monkeypatch) -> typing.Generator[Harness, None, None]:
 
     yield harness
     harness.cleanup()
-
-
-@pytest.fixture
-def set_environment_variable(request):
-    """Set the environment variables."""
-    environment_variables = request.param
-    before_env = dict(os.environ)
-    os.environ.update(environment_variables)
-    yield
-    for env in os.environ:
-        if env not in before_env:
-            del os.environ[env]
-        else:
-            os.environ[env] = before_env[env]

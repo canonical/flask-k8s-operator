@@ -17,6 +17,24 @@ from pytest import Config, FixtureRequest
 from pytest_operator.plugin import OpsTest
 
 
+@pytest.fixture(scope="module", name="flask_app_image")
+def fixture_flask_app_image(pytestconfig: Config):
+    """Return the --flask-app-image test parameter."""
+    flask_app_image = pytestconfig.getoption("--flask-app-image")
+    if not flask_app_image:
+        raise ValueError("the following arguments are required: --flask-app-image")
+    return flask_app_image
+
+
+@pytest.fixture(scope="module", name="test_flask_image")
+def fixture_test_flask_image(pytestconfig: Config):
+    """Return the --test-flask-image test parameter."""
+    test_flask_image = pytestconfig.getoption("--test-flask-image")
+    if not test_flask_image:
+        raise ValueError("the following arguments are required: --test-flask-image")
+    return test_flask_image
+
+
 @pytest_asyncio.fixture(scope="module", name="model")
 async def fixture_model(ops_test: OpsTest) -> Model:
     """Return the current testing juju model."""
@@ -32,7 +50,7 @@ def external_hostname_fixture() -> str:
 
 @pytest.fixture(scope="module", name="traefik_app_name")
 def traefik_app_name_fixture() -> str:
-    """Return the name of the traefix application deployed for tests."""
+    """Return the name of the traefik application deployed for tests."""
     return "traefik-k8s"
 
 
@@ -55,7 +73,7 @@ def grafana_app_name_fixture() -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="build_charm")
-async def build_charm_fixture(ops_test) -> str:
+async def build_charm_fixture(ops_test, pytestconfig) -> str:
     """Build the charm and injects additional configurations into config.yaml.
 
     This fixture is designed to simulate a feature that is not yet available in charmcraft that
@@ -63,7 +81,9 @@ async def build_charm_fixture(ops_test) -> str:
     Three additional configurations, namely foo_str, foo_int, foo_dict, foo_bool,
     and application_root will be appended to the config.yaml file.
     """
-    charm = await ops_test.build_charm(".")
+    charm = pytestconfig.getoption("--charm-file")
+    if not charm:
+        charm = await ops_test.build_charm(".")
     charm_zip = zipfile.ZipFile(charm, "r")
     with charm_zip.open("config.yaml") as file:
         config = yaml.safe_load(file)
@@ -93,16 +113,12 @@ async def build_charm_fixture(ops_test) -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="flask_app")
-async def flask_app_fixture(
-    build_charm: str,
-    model: Model,
-    pytestconfig: Config,
-):
+async def flask_app_fixture(build_charm: str, model: Model, test_flask_image: str):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
 
     resources = {
-        "flask-app-image": pytestconfig.getoption("--test-flask-image"),
+        "flask-app-image": test_flask_image,
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
     app = await model.deploy(
