@@ -35,4 +35,4 @@ async def test_proxy(build_charm: str, model: Model, pytestconfig: Config, get_u
         assert env["https_proxy"] == "http://proxy.test"
         assert env["HTTPS_PROXY"] == "http://proxy.test"
         assert env["no_proxy"] == "127.0.0.1,10.0.0.1"
-        assert env["NO_proxy"] == "127.0.0.1,10.0.0.1"
+        assert env["NO_PROXY"] == "127.0.0.1,10.0.0.1"
