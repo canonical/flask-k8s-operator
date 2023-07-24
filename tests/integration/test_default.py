@@ -13,7 +13,6 @@ from pytest_operator.plugin import OpsTest
 
 async def test_default_image(
     pytestconfig: Config,
-    ops_test: OpsTest,
     model: Model,
     charm_file: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
