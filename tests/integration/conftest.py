@@ -96,7 +96,7 @@ async def build_charm_fixture(charm_file: str) -> str:
     charm = "flask-k8s_ubuntu-22.04-amd64_modified.charm"
     with open(charm, "wb") as new_charm_file:
         new_charm_file.write(new_charm.getvalue())
-    return charm
+    return f"./{charm}"
 
 
 @pytest_asyncio.fixture(scope="module", name="flask_app")
