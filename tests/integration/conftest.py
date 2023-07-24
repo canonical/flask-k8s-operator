@@ -94,8 +94,8 @@ async def build_charm_fixture(ops_test) -> str:
                     data = file.read()
                 new_charm_zip.writestr(item, data)
     charm_zip.close()
-    with open(charm, "wb") as charm_file:
-        charm_file.write(new_charm.getvalue())
+    with open(charm, "wb") as new_charm_file:
+        new_charm_file.write(new_charm.getvalue())
     return charm
 
 
