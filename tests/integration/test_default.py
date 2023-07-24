@@ -8,7 +8,6 @@ import typing
 import requests
 from juju.model import Model
 from pytest import Config
-from pytest_operator.plugin import OpsTest
 
 
 async def test_default_image(
