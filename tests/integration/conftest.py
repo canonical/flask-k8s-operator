@@ -54,6 +54,13 @@ def grafana_app_name_fixture() -> str:
     return "grafana-k8s"
 
 
+@pytest.fixture(scope="module")
+def charm_file(pytestconfig: pytest.Config):
+    """Get the existing charm file."""
+    value = pytestconfig.getoption("--charm-file")
+    yield f"./{value}"
+
+
 @pytest_asyncio.fixture(scope="module", name="build_charm")
 async def build_charm_fixture(ops_test) -> str:
     """Build the charm and injects additional configurations into config.yaml.
