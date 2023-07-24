@@ -54,7 +54,7 @@ def grafana_app_name_fixture() -> str:
     return "grafana-k8s"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="module", name="charm_file")
 def charm_file_fixture(pytestconfig: pytest.Config):
     """Get the existing charm file."""
     value = pytestconfig.getoption("--charm-file")
