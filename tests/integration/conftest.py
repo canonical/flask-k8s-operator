@@ -62,7 +62,7 @@ def charm_file(pytestconfig: pytest.Config):
 
 
 @pytest_asyncio.fixture(scope="module", name="build_charm")
-async def build_charm_fixture(ops_test) -> str:
+async def build_charm_fixture(ops_test, charm_file) -> str:
     """Build the charm and injects additional configurations into config.yaml.
 
     This fixture is designed to simulate a feature that is not yet available in charmcraft that
@@ -70,8 +70,7 @@ async def build_charm_fixture(ops_test) -> str:
     Three additional configurations, namely foo_str, foo_int, foo_dict, foo_bool,
     and application_root will be appended to the config.yaml file.
     """
-    charm = await ops_test.build_charm(".")
-    charm_zip = zipfile.ZipFile(charm, "r")
+    charm_zip = zipfile.ZipFile(charm_file, "r")
     with charm_zip.open("config.yaml") as file:
         config = yaml.safe_load(file)
     config["options"].update(
@@ -94,6 +93,7 @@ async def build_charm_fixture(ops_test) -> str:
                     data = file.read()
                 new_charm_zip.writestr(item, data)
     charm_zip.close()
+    charm = "flask-k8s_ubuntu-22.04-amd64_modified.charm"
     with open(charm, "wb") as new_charm_file:
         new_charm_file.write(new_charm.getvalue())
     return charm
