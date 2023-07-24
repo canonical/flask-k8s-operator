@@ -55,14 +55,14 @@ def grafana_app_name_fixture() -> str:
 
 
 @pytest.fixture(scope="module")
-def charm_file(pytestconfig: pytest.Config):
+def charm_file_fixture(pytestconfig: pytest.Config):
     """Get the existing charm file."""
     value = pytestconfig.getoption("--charm-file")
     yield f"./{value}"
 
 
 @pytest_asyncio.fixture(scope="module", name="build_charm")
-async def build_charm_fixture(ops_test, charm_file) -> str:
+async def build_charm_fixture(charm_file: str) -> str:
     """Build the charm and injects additional configurations into config.yaml.
 
     This fixture is designed to simulate a feature that is not yet available in charmcraft that
