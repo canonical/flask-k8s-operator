@@ -4,6 +4,7 @@
 """Fixtures for flask charm integration tests."""
 
 import asyncio
+import pathlib
 import io
 import json
 import zipfile
@@ -72,8 +73,17 @@ def grafana_app_name_fixture() -> str:
     return "grafana-k8s"
 
 
+@pytest_asyncio.fixture(scope="module", name="charm_file")
+async def charm_file_fixture(pytestconfig: pytest.Config, ops_test: OpsTest) -> pathlib.Path:
+    """Get the existing charm file."""
+    charm_file = pytestconfig.getoption("--charm-file")
+    if not charm_file:
+        charm_file = await ops_test.build_charm(".")
+    return pathlib.Path(charm_file).absolute()
+
+
 @pytest_asyncio.fixture(scope="module", name="build_charm")
-async def build_charm_fixture(ops_test, pytestconfig) -> str:
+async def build_charm_fixture(charm_file: str) -> str:
     """Build the charm and injects additional configurations into config.yaml.
 
     This fixture is designed to simulate a feature that is not yet available in charmcraft that
@@ -81,10 +91,7 @@ async def build_charm_fixture(ops_test, pytestconfig) -> str:
     Three additional configurations, namely foo_str, foo_int, foo_dict, foo_bool,
     and application_root will be appended to the config.yaml file.
     """
-    charm = pytestconfig.getoption("--charm-file")
-    if not charm:
-        charm = await ops_test.build_charm(".")
-    charm_zip = zipfile.ZipFile(charm, "r")
+    charm_zip = zipfile.ZipFile(charm_file, "r")
     with charm_zip.open("config.yaml") as file:
         config = yaml.safe_load(file)
     config["options"].update(
@@ -107,9 +114,10 @@ async def build_charm_fixture(ops_test, pytestconfig) -> str:
                     data = file.read()
                 new_charm_zip.writestr(item, data)
     charm_zip.close()
-    with open(charm, "wb") as charm_file:
-        charm_file.write(new_charm.getvalue())
-    return charm
+    charm = "flask-k8s_ubuntu-22.04-amd64_modified.charm"
+    with open(charm, "wb") as new_charm_file:
+        new_charm_file.write(new_charm.getvalue())
+    return f"./{charm}"
 
 
 @pytest_asyncio.fixture(scope="module", name="flask_app")
