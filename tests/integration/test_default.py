@@ -7,11 +7,9 @@ import typing
 
 import requests
 from juju.model import Model
-from pytest import Config
 
 
 async def test_default_image(
-    pytestconfig: Config,
     model: Model,
     flask_app_image: str,
     charm_file: str,

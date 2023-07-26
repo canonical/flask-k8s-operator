@@ -4,9 +4,9 @@
 """Fixtures for flask charm integration tests."""
 
 import asyncio
-import pathlib
 import io
 import json
+import pathlib
 import zipfile
 
 import pytest

@@ -9,4 +9,3 @@ def pytest_addoption(parser):
     parser.addoption("--charm-file", action="store")
     parser.addoption("--flask-app-image", action="store")
     parser.addoption("--test-flask-image", action="store")
-    parser.addoption("--charm-file", action="store")
