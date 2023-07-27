@@ -51,16 +51,21 @@ HTTP_PROXY_TEST_PARAMS = [
     pytest.param({}, {}, id="no_env"),
     pytest.param({"JUJU_CHARM_NO_PROXY": "127.0.0.1"}, {"no_proxy": "127.0.0.1"}, id="no_proxy"),
     pytest.param(
-        {"JUJU_CHARM_HTTP_PROXY": "proxy.test"}, {"http_proxy": "proxy.test"}, id="http_proxy"
+        {"JUJU_CHARM_HTTP_PROXY": "http://proxy.test"},
+        {"http_proxy": "http://proxy.test"},
+        id="http_proxy",
     ),
     pytest.param(
-        {"JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
-        {"https_proxy": "proxy.test"},
+        {"JUJU_CHARM_HTTPS_PROXY": "http://proxy.test"},
+        {"https_proxy": "http://proxy.test"},
         id="https_proxy",
     ),
     pytest.param(
-        {"JUJU_CHARM_HTTP_PROXY": "proxy.test", "JUJU_CHARM_HTTPS_PROXY": "proxy.test"},
-        {"http_proxy": "proxy.test", "https_proxy": "proxy.test"},
+        {
+            "JUJU_CHARM_HTTP_PROXY": "http://proxy.test",
+            "JUJU_CHARM_HTTPS_PROXY": "http://proxy.test",
+        },
+        {"http_proxy": "http://proxy.test", "https_proxy": "http://proxy.test"},
         id="http_https_proxy",
     ),
 ]

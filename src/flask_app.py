@@ -3,7 +3,6 @@
 
 """Provide the FlaskApp class to represent the Flask application."""
 import json
-import os
 
 from charm_state import KNOWN_CHARM_CONFIG, CharmState
 from constants import FLASK_ENV_CONFIG_PREFIX
@@ -49,7 +48,7 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         if secret_key_env not in env:
             env[secret_key_env] = self._charm_state.flask_secret_key
         for proxy_variable in ("http_proxy", "https_proxy", "no_proxy"):
-            proxy_value = os.environ.get(f"JUJU_CHARM_{proxy_variable.upper()}")
+            proxy_value = getattr(self._charm_state.proxy, proxy_variable)
             if proxy_value:
                 env[proxy_variable] = proxy_value
                 env[proxy_variable.upper()] = proxy_value
