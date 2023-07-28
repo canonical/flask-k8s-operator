@@ -50,6 +50,6 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         for proxy_variable in ("http_proxy", "https_proxy", "no_proxy"):
             proxy_value = getattr(self._charm_state.proxy, proxy_variable)
             if proxy_value:
-                env[proxy_variable] = proxy_value
-                env[proxy_variable.upper()] = proxy_value
+                env[proxy_variable] = str(proxy_value)
+                env[proxy_variable.upper()] = str(proxy_value)
         return env
