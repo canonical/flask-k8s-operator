@@ -12,7 +12,6 @@ import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 
 from constants import FLASK_DATABASE_NAME, FLASK_SUPPORTED_DB_INTERFACES
-from exceptions import InvalidDatabaseRelationDataError
 
 logger = logging.getLogger(__name__)
 
@@ -93,9 +92,6 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
 
         Returns:
             DatabaseURI containing details about the data provider integration
-
-        Raises:
-            InvalidDatabaseRelationDataError: if the database relation has invalid data
         """
         db_uris: typing.Dict[str, str] = {}
 

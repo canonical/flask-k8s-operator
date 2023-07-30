@@ -15,11 +15,7 @@ from ops.main import main
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
 from databases import Databases
-from exceptions import (
-    CharmConfigInvalidError,
-    InvalidDatabaseRelationDataError,
-    PebbleNotReadyError,
-)
+from exceptions import CharmConfigInvalidError, PebbleNotReadyError
 from flask_app import FlaskApp
 from observability import Observability
 from secret_storage import SecretStorage
@@ -161,12 +157,6 @@ class FlaskCharm(ops.CharmBase):
             The pebble layer definition for flask application.
         """
         environment = self._flask_app.flask_environment()
-        try:
-            environment.update(self.databases.get_uris())
-        except InvalidDatabaseRelationDataError as exc:
-            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
-            # Returning an empty dict will cancel add_layer() when used with combine=True
-            return {}
         return ops.pebble.LayerDict(
             services={
                 FLASK_SERVICE_NAME: {
