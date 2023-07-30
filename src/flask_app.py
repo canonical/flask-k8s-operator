@@ -52,4 +52,5 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             if proxy_value:
                 env[proxy_variable] = str(proxy_value)
                 env[proxy_variable.upper()] = str(proxy_value)
+        env.update(self._charm_state.database_uris)
         return env

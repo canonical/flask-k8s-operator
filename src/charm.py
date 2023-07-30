@@ -29,7 +29,11 @@ logger = logging.getLogger(__name__)
 
 
 class FlaskCharm(ops.CharmBase):
-    """Flask Charm service."""
+    """Flask Charm service.
+
+    Args:
+        databases: Database management object.
+    """
 
     def __init__(self, *args: typing.Any) -> None:
         """Initialize the instance.
@@ -38,7 +42,7 @@ class FlaskCharm(ops.CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self._databases = Databases(charm=self)
+        self.databases = Databases(charm=self)
         self._secret_storage = SecretStorage(charm=self)
 
         try:
@@ -65,7 +69,7 @@ class FlaskCharm(ops.CharmBase):
         )
         self._observability = Observability(charm=self, charm_state=self._charm_state)
 
-        self.framework.observe(self.on.config_changed, self._on_config_changed)
+        self.framework.observe(self.on.config_changed, self.on_config_changed)
         self.framework.observe(
             self.on.statsd_prometheus_exporter_pebble_ready,
             self._on_statsd_prometheus_exporter_pebble_ready,
@@ -138,7 +142,7 @@ class FlaskCharm(ops.CharmBase):
         container.replan()
         self._update_app_and_unit_status(ops.ActiveStatus())
 
-    def _on_config_changed(self, event: ops.EventBase) -> None:
+    def on_config_changed(self, event: ops.EventBase) -> None:
         """Configure the flask pebble service layer.
 
         Args:
@@ -158,7 +162,7 @@ class FlaskCharm(ops.CharmBase):
         """
         environment = self._flask_app.flask_environment()
         try:
-            environment.update(self._databases.get_uris())
+            environment.update(self.databases.get_uris())
         except InvalidDatabaseRelationDataError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             # Returning an empty dict will cancel add_layer() when used with combine=True
@@ -223,7 +227,7 @@ class FlaskCharm(ops.CharmBase):
         Args:
             event: the action event that trigger this callback.
         """
-        self._on_config_changed(event)
+        self.on_config_changed(event)
 
 
 if __name__ == "__main__":  # pragma: nocover

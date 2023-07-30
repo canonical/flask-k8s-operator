@@ -11,15 +11,13 @@ import ops
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 
-from constants import (
-    FLASK_CONTAINER_NAME,
-    FLASK_DATABASE_NAME,
-    FLASK_SERVICE_NAME,
-    FLASK_SUPPORTED_DB_INTERFACES,
-)
+from constants import FLASK_DATABASE_NAME, FLASK_SUPPORTED_DB_INTERFACES
 from exceptions import InvalidDatabaseRelationDataError
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from charm import FlaskCharm
 
 
 # We need to derive from ops.framework.Object to subscribe to callbacks
@@ -32,7 +30,7 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         _databases: A dict of DatabaseRequires to store relations
     """
 
-    def __init__(self, charm: ops.CharmBase):
+    def __init__(self, charm: "FlaskCharm"):
         """Initialize a new instance of the Databases class.
 
         Args:
@@ -62,24 +60,7 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         Args:
             event: the database-requires-changed event that trigger this callback function.
         """
-        container = self._charm.unit.get_container(FLASK_CONTAINER_NAME)
-        if not container.can_connect():
-            logger.info(
-                "pebble client in the Flask container is not ready, defer database-requires-event"
-            )
-            event.defer()
-            return
-        plan = container.get_plan()
-        if FLASK_SERVICE_NAME in plan.services:
-            flask_service = plan.services[FLASK_SERVICE_NAME].to_dict()
-            flask_service["environment"].update(self.get_uris())
-            new_layer = ops.pebble.LayerDict(
-                services={
-                    FLASK_SERVICE_NAME: flask_service,
-                }
-            )
-            container.add_layer("flask-app", new_layer, combine=True)
-        container.replan()
+        self._charm.on_config_changed(event)
 
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:
         """Set up a DatabaseRequires instance.
