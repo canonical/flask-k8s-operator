@@ -118,9 +118,7 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
             # https://github.com/canonical/charm-relation-interfaces/blob/main/interfaces/mysql_client/v0/schemas/provider.json
             if not all(data.get(key) for key in ("endpoints", "username", "password")):
                 logger.warning("Incorrect relation data from the data provider: %s", data)
-                raise InvalidDatabaseRelationDataError(
-                    f"Incorrect relation data from the data provider: {data}"
-                )
+                continue
 
             database_name = data.get("database", db_requires.database)
             endpoint = data["endpoints"].split(",")[0]
