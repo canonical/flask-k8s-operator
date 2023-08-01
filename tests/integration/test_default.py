@@ -7,12 +7,11 @@ import typing
 
 import requests
 from juju.model import Model
-from pytest import Config
 
 
 async def test_default_image(
-    pytestconfig: Config,
     model: Model,
+    flask_app_image: str,
     charm_file: str,
     get_unit_ips: typing.Callable[[str], typing.Awaitable[tuple[str, ...]]],
 ):
@@ -22,7 +21,7 @@ async def test_default_image(
     assert: flask-k8s charm should run the default Flask application.
     """
     resources = {
-        "flask-app-image": pytestconfig.getoption("--flask-app-image"),
+        "flask-app-image": flask_app_image,
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
     app_name = "flask-sentinel"

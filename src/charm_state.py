@@ -5,15 +5,18 @@
 
 import datetime
 import itertools
+import os
 import pathlib
 import typing
 
 # pydantic is causing this no-name-in-module problem
 from pydantic import (  # pylint: disable=no-name-in-module
+    AnyHttpUrl,
     BaseModel,
     Extra,
     Field,
     ValidationError,
+    parse_obj_as,
     validator,
 )
 
@@ -79,6 +82,20 @@ class FlaskConfig(BaseModel, extra=Extra.allow):  # pylint: disable=too-few-publ
         return value.upper()
 
 
+class ProxyConfig(BaseModel):  # pylint: disable=too-few-public-methods
+    """Configuration for accessing Jenkins through proxy.
+
+    Attributes:
+        http_proxy: The http proxy URL.
+        https_proxy: The https proxy URL.
+        no_proxy: Comma separated list of hostnames to bypass proxy.
+    """
+
+    http_proxy: typing.Optional[AnyHttpUrl]
+    https_proxy: typing.Optional[AnyHttpUrl]
+    no_proxy: typing.Optional[str]
+
+
 # too-many-instance-attributes is okay since we use a factory function to construct the CharmState
 class CharmState:  # pylint: disable=too-many-instance-attributes
     """Represents the state of the Flask charm.
@@ -95,6 +112,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         flask_error_log: the file path for the Flask error log.
         flask_statsd_host: the statsd server host for Flask metrics.
         flask_secret_key: the charm managed flask secret key.
+        proxy: proxy information.
     """
 
     def __init__(
@@ -135,6 +153,22 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         )
         self._flask_config = flask_config if flask_config is not None else {}
         self._app_config = app_config if app_config is not None else {}
+
+    @property
+    def proxy(self) -> "ProxyConfig":
+        """Get charm proxy information from juju charm environment.
+
+        Returns:
+            charm proxy information in the form of `ProxyConfig`.
+        """
+        http_proxy = os.environ.get("JUJU_CHARM_HTTP_PROXY")
+        https_proxy = os.environ.get("JUJU_CHARM_HTTPS_PROXY")
+        no_proxy = os.environ.get("JUJU_CHARM_NO_PROXY")
+        return ProxyConfig(
+            http_proxy=parse_obj_as(AnyHttpUrl, http_proxy) if http_proxy else None,
+            https_proxy=parse_obj_as(AnyHttpUrl, https_proxy) if https_proxy else None,
+            no_proxy=no_proxy,
+        )
 
     @classmethod
     def from_charm(cls, charm: "FlaskCharm", secret_storage: SecretStorage) -> "CharmState":

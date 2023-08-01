@@ -7,6 +7,8 @@
 # pylint: disable=protected-access
 
 import json
+import typing
+import unittest.mock
 
 import pytest
 from ops.testing import Harness
@@ -43,3 +45,52 @@ def test_flask_env(harness: Harness, flask_config: dict):
         f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": v if isinstance(v, str) else json.dumps(v)
         for k, v in flask_config.items()
     }
+
+
+HTTP_PROXY_TEST_PARAMS = [
+    pytest.param({}, {}, id="no_env"),
+    pytest.param({"JUJU_CHARM_NO_PROXY": "127.0.0.1"}, {"no_proxy": "127.0.0.1"}, id="no_proxy"),
+    pytest.param(
+        {"JUJU_CHARM_HTTP_PROXY": "http://proxy.test"},
+        {"http_proxy": "http://proxy.test"},
+        id="http_proxy",
+    ),
+    pytest.param(
+        {"JUJU_CHARM_HTTPS_PROXY": "http://proxy.test"},
+        {"https_proxy": "http://proxy.test"},
+        id="https_proxy",
+    ),
+    pytest.param(
+        {
+            "JUJU_CHARM_HTTP_PROXY": "http://proxy.test",
+            "JUJU_CHARM_HTTPS_PROXY": "http://proxy.test",
+        },
+        {"http_proxy": "http://proxy.test", "https_proxy": "http://proxy.test"},
+        id="http_https_proxy",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "set_env, expected",
+    HTTP_PROXY_TEST_PARAMS,
+)
+def test_http_proxy(set_env: typing.Dict[str, str], expected: typing.Dict[str, str], monkeypatch):
+    """
+    arrange: set juju charm http proxy related environment variables.
+    act: generate a flask environment.
+    assert: flask_environment generated should contain proper proxy environment variables.
+    """
+    for set_env_name, set_env_value in set_env.items():
+        monkeypatch.setenv(set_env_name, set_env_value)
+    charm_state = CharmState(secret_storage=unittest.mock.MagicMock(), flask_config={})
+    flask_app = FlaskApp(charm_state=charm_state)
+    env = flask_app.flask_environment()
+    expected_env: typing.Dict[str, typing.Optional[str]] = {
+        "http_proxy": None,
+        "https_proxy": None,
+        "no_proxy": None,
+    }
+    expected_env.update(expected)
+    for env_name, env_value in expected_env.items():
+        assert env.get(env_name) == env.get(env_name.upper()) == env_value

@@ -6,6 +6,7 @@
 import asyncio
 import io
 import json
+import pathlib
 import zipfile
 
 import pytest
@@ -15,6 +16,24 @@ from juju.application import Application
 from juju.model import Model
 from pytest import Config, FixtureRequest
 from pytest_operator.plugin import OpsTest
+
+
+@pytest.fixture(scope="module", name="flask_app_image")
+def fixture_flask_app_image(pytestconfig: Config):
+    """Return the --flask-app-image test parameter."""
+    flask_app_image = pytestconfig.getoption("--flask-app-image")
+    if not flask_app_image:
+        raise ValueError("the following arguments are required: --flask-app-image")
+    return flask_app_image
+
+
+@pytest.fixture(scope="module", name="test_flask_image")
+def fixture_test_flask_image(pytestconfig: Config):
+    """Return the --test-flask-image test parameter."""
+    test_flask_image = pytestconfig.getoption("--test-flask-image")
+    if not test_flask_image:
+        raise ValueError("the following arguments are required: --test-flask-image")
+    return test_flask_image
 
 
 @pytest_asyncio.fixture(scope="module", name="model")
@@ -32,7 +51,7 @@ def external_hostname_fixture() -> str:
 
 @pytest.fixture(scope="module", name="traefik_app_name")
 def traefik_app_name_fixture() -> str:
-    """Return the name of the traefix application deployed for tests."""
+    """Return the name of the traefik application deployed for tests."""
     return "traefik-k8s"
 
 
@@ -54,11 +73,13 @@ def grafana_app_name_fixture() -> str:
     return "grafana-k8s"
 
 
-@pytest.fixture(scope="module", name="charm_file")
-def charm_file_fixture(pytestconfig: pytest.Config):
+@pytest_asyncio.fixture(scope="module", name="charm_file")
+async def charm_file_fixture(pytestconfig: pytest.Config, ops_test: OpsTest) -> pathlib.Path:
     """Get the existing charm file."""
-    value = pytestconfig.getoption("--charm-file")
-    yield f"./{value}"
+    charm_file = pytestconfig.getoption("--charm-file")
+    if not charm_file:
+        charm_file = await ops_test.build_charm(".")
+    return pathlib.Path(charm_file).absolute()
 
 
 @pytest_asyncio.fixture(scope="module", name="build_charm")
@@ -100,16 +121,12 @@ async def build_charm_fixture(charm_file: str) -> str:
 
 
 @pytest_asyncio.fixture(scope="module", name="flask_app")
-async def flask_app_fixture(
-    build_charm: str,
-    model: Model,
-    pytestconfig: Config,
-):
+async def flask_app_fixture(build_charm: str, model: Model, test_flask_image: str):
     """Build and deploy the flask charm."""
     app_name = "flask-k8s"
 
     resources = {
-        "flask-app-image": pytestconfig.getoption("--test-flask-image"),
+        "flask-app-image": test_flask_image,
         "statsd-prometheus-exporter-image": "prom/statsd-exporter",
     }
     app = await model.deploy(

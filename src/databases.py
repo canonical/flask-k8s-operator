@@ -17,7 +17,7 @@ from constants import (
     FLASK_SERVICE_NAME,
     FLASK_SUPPORTED_DB_INTERFACES,
 )
-from exceptions import InvalidDatabaseRelationDataError, PebbleNotReadyError
+from exceptions import InvalidDatabaseRelationDataError
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +62,8 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         Args:
             event: the database-requires-changed event that trigger this callback function.
         """
-        try:
-            container = self._charm.unit.get_container(FLASK_CONTAINER_NAME)
-        except PebbleNotReadyError:
+        container = self._charm.unit.get_container(FLASK_CONTAINER_NAME)
+        if not container.can_connect():
             logger.info(
                 "pebble client in the Flask container is not ready, defer database-requires-event"
             )

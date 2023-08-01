@@ -47,4 +47,9 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         secret_key_env = f"{FLASK_ENV_CONFIG_PREFIX}SECRET_KEY"
         if secret_key_env not in env:
             env[secret_key_env] = self._charm_state.flask_secret_key
+        for proxy_variable in ("http_proxy", "https_proxy", "no_proxy"):
+            proxy_value = getattr(self._charm_state.proxy, proxy_variable)
+            if proxy_value:
+                env[proxy_variable] = str(proxy_value)
+                env[proxy_variable.upper()] = str(proxy_value)
         return env
