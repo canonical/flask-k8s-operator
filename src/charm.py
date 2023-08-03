@@ -65,7 +65,7 @@ class FlaskCharm(ops.CharmBase):
         )
         self._observability = Observability(charm=self, charm_state=self._charm_state)
 
-        self.framework.observe(self.on.config_changed, self.on_config_changed)
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(
             self.on.statsd_prometheus_exporter_pebble_ready,
             self._on_statsd_prometheus_exporter_pebble_ready,
@@ -138,7 +138,7 @@ class FlaskCharm(ops.CharmBase):
         container.replan()
         self._update_app_and_unit_status(ops.ActiveStatus())
 
-    def on_config_changed(self, event: ops.EventBase) -> None:
+    def _on_config_changed(self, event: ops.EventBase) -> None:
         """Configure the flask pebble service layer.
 
         Args:
@@ -217,7 +217,7 @@ class FlaskCharm(ops.CharmBase):
         Args:
             event: the action event that trigger this callback.
         """
-        self.on_config_changed(event)
+        self._on_config_changed(event)
 
 
 if __name__ == "__main__":  # pragma: nocover

@@ -53,13 +53,13 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
             for name in self._db_interfaces
         }
 
-    def _on_database_requires_event(self, event: DatabaseRequiresEvent) -> None:
+    def _on_database_requires_event(self, _event: DatabaseRequiresEvent) -> None:
         """Configure the flask pebble service layer in case of DatabaseRequiresEvent.
 
         Args:
-            event: the database-requires-changed event that trigger this callback function.
+            _event: the database-requires-changed event that trigger this callback function.
         """
-        self._charm.on_config_changed(event)
+        self._charm.on.config_changed.emit()
 
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:
         """Set up a DatabaseRequires instance.
