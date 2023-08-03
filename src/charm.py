@@ -38,12 +38,12 @@ class FlaskCharm(ops.CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self.databases = Databases(charm=self)
+        self._databases = Databases(charm=self)
         self._secret_storage = SecretStorage(charm=self)
 
         try:
             self._charm_state = CharmState.from_charm(
-                charm=self, secret_storage=self._secret_storage
+                charm=self, secret_storage=self._secret_storage, databases=self._databases
             )
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))

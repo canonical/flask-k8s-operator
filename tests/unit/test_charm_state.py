@@ -44,7 +44,9 @@ def test_charm_state_flask_config(
     harness.begin()
     harness.update_config(charm_config)
     charm_state = CharmState.from_charm(
-        secret_storage=harness.charm._charm_state._secret_storage, charm=harness.charm
+        secret_storage=harness.charm._charm_state._secret_storage,
+        charm=harness.charm,
+        databases=harness.charm._databases,
     )
     assert charm_state.flask_config == flask_config
 
@@ -70,7 +72,9 @@ def test_charm_state_invalid_flask_config(harness: Harness, charm_config: dict) 
     harness.update_config(charm_config)
     with pytest.raises(CharmConfigInvalidError) as exc:
         CharmState.from_charm(
-            secret_storage=harness.charm._charm_state._secret_storage, charm=harness.charm
+            secret_storage=harness.charm._charm_state._secret_storage,
+            charm=harness.charm,
+            databases=harness.charm._databases,
         )
     for config_key in charm_config:
         assert config_key in exc.value.msg
@@ -92,6 +96,8 @@ def test_charm_state_wsgi_path(harness: Harness, charm_config: dict, wsgi_path: 
     harness.begin()
     harness.update_config(charm_config)
     charm_state = CharmState.from_charm(
-        secret_storage=harness.charm._charm_state._secret_storage, charm=harness.charm
+        secret_storage=harness.charm._charm_state._secret_storage,
+        charm=harness.charm,
+        databases=harness.charm._databases,
     )
     assert charm_state.flask_wsgi_app_path == wsgi_path

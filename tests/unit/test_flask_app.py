@@ -34,7 +34,9 @@ def test_flask_env(harness: Harness, flask_config: dict):
     """
     harness.begin_with_initial_hooks()
     charm_state = CharmState(
-        secret_storage=harness.charm._charm_state._secret_storage, flask_config=flask_config
+        secret_storage=harness.charm._charm_state._secret_storage,
+        flask_config=flask_config,
+        databases=harness.charm._databases,
     )
     flask_app = FlaskApp(charm_state=charm_state)
     env = flask_app.flask_environment()
@@ -83,7 +85,11 @@ def test_http_proxy(set_env: typing.Dict[str, str], expected: typing.Dict[str, s
     """
     for set_env_name, set_env_value in set_env.items():
         monkeypatch.setenv(set_env_name, set_env_value)
-    charm_state = CharmState(secret_storage=unittest.mock.MagicMock(), flask_config={})
+    charm_state = CharmState(
+        secret_storage=unittest.mock.MagicMock(),
+        flask_config={},
+        databases=unittest.mock.MagicMock(),
+    )
     flask_app = FlaskApp(charm_state=charm_state)
     env = flask_app.flask_environment()
     expected_env: typing.Dict[str, typing.Optional[str]] = {
