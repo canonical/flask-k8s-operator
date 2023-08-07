@@ -24,11 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class FlaskCharm(ops.CharmBase):
-    """Flask Charm service.
-
-    Args:
-        databases: Database management object.
-    """
+    """Flask Charm service."""
 
     def __init__(self, *args: typing.Any) -> None:
         """Initialize the instance.

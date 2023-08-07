@@ -2,10 +2,10 @@
 # See LICENSE file for licensing details.
 
 """Flask charm state unit tests."""
+import copy
 import unittest.mock
 
 import pytest
-from ops.testing import Harness
 
 from charm_state import CharmState
 from exceptions import CharmConfigInvalidError
@@ -13,6 +13,9 @@ from exceptions import CharmConfigInvalidError
 # this is a unit test file
 # pylint: disable=protected-access
 
+DEFAULT_CHARM_CONFIG = {"webserver_wsgi_path": "app:app", "flask_preferred_url_scheme": "HTTPS"}
+SECRET_STORAGE_MOCK = unittest.mock.MagicMock(is_initialized=True)
+SECRET_STORAGE_MOCK.get_flask_secret_key.return_value = ""
 
 CHARM_STATE_FLASK_CONFIG_TEST_PARAMS = [
     pytest.param(
@@ -41,12 +44,10 @@ def test_charm_state_flask_config(charm_config: dict, flask_config: dict) -> Non
     act: set flask_* charm configurations.
     assert: flask_config in the charm state should reflect changes in charm configurations.
     """
-    config = {"webserver_wsgi_path": "app:app", "flask_preferred_url_scheme": "HTTPS"}
+    config = copy.copy(DEFAULT_CHARM_CONFIG)
     config.update(charm_config)
-    secret_storage_mock = unittest.mock.MagicMock(is_initialized=True)
-    secret_storage_mock.get_flask_secret_key.return_value = ""
     charm_state = CharmState.from_charm(
-        secret_storage=secret_storage_mock,
+        secret_storage=SECRET_STORAGE_MOCK,
         charm=unittest.mock.MagicMock(config=config),
     )
     assert charm_state.flask_config == flask_config
@@ -63,18 +64,18 @@ def test_charm_state_flask_config(charm_config: dict, flask_config: dict) -> Non
         ),
     ],
 )
-def test_charm_state_invalid_flask_config(harness: Harness, charm_config: dict) -> None:
+def test_charm_state_invalid_flask_config(charm_config: dict) -> None:
     """
     arrange: none
     act: set flask_* charm configurations to be invalid values.
     assert: the CharmState should raise a CharmConfigInvalidError exception
     """
-    harness.begin()
-    harness.update_config(charm_config)
+    config = copy.copy(DEFAULT_CHARM_CONFIG)
+    config.update(charm_config)
     with pytest.raises(CharmConfigInvalidError) as exc:
         CharmState.from_charm(
-            secret_storage=harness.charm._secret_storage,
-            charm=harness.charm,
+            secret_storage=SECRET_STORAGE_MOCK,
+            charm=unittest.mock.MagicMock(config=config),
         )
     for config_key in charm_config:
         assert config_key in exc.value.msg
@@ -87,16 +88,16 @@ def test_charm_state_invalid_flask_config(harness: Harness, charm_config: dict) 
         pytest.param({"webserver_wsgi_path": "foo.bar:app2"}, "foo.bar:app2", id="non-default"),
     ],
 )
-def test_charm_state_wsgi_path(harness: Harness, charm_config: dict, wsgi_path: str) -> None:
+def test_charm_state_wsgi_path(charm_config: dict, wsgi_path: str) -> None:
     """
     arrange: none.
     act: set the wsgi_path charm configuration to different values
     assert: the CharmState should reflect those changes
     """
-    harness.begin()
-    harness.update_config(charm_config)
+    config = copy.copy(DEFAULT_CHARM_CONFIG)
+    config.update(charm_config)
     charm_state = CharmState.from_charm(
-        secret_storage=harness.charm._secret_storage,
-        charm=harness.charm,
+        secret_storage=SECRET_STORAGE_MOCK,
+        charm=unittest.mock.MagicMock(config=config),
     )
     assert charm_state.flask_wsgi_app_path == wsgi_path
