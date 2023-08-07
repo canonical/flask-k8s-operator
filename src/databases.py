@@ -12,11 +12,9 @@ import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 
 from constants import FLASK_DATABASE_NAME, FLASK_SUPPORTED_DB_INTERFACES
+from flask_app import FlaskApp
 
 logger = logging.getLogger(__name__)
-
-if typing.TYPE_CHECKING:
-    from charm import FlaskCharm
 
 
 # We need to derive from ops.framework.Object to subscribe to callbacks
@@ -29,15 +27,17 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         _databases: A dict of DatabaseRequires to store relations
     """
 
-    def __init__(self, charm: "FlaskCharm"):
+    def __init__(self, charm: ops.CharmBase, flask_app: FlaskApp):
         """Initialize a new instance of the Databases class.
 
         Args:
             charm: The main charm. Used for events callbacks
+            flask_app: The flask application manager
         """
         # The following is necessary to be able to subscribe to callbacks from ops.framework
         super().__init__(charm, "databases")
         self._charm = charm
+        self._flask_app = flask_app
 
         metadata = yaml.safe_load(pathlib.Path("metadata.yaml").read_text(encoding="utf-8"))
         self._db_interfaces = (
@@ -59,7 +59,7 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         Args:
             _event: the database-requires-changed event that trigger this callback function.
         """
-        self._charm.on.config_changed.emit()
+        self._flask_app.restart_flask()
 
     def _setup_database_requirer(self, relation_name: str, database_name: str) -> DatabaseRequires:
         """Set up a DatabaseRequires instance.

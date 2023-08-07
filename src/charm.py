@@ -5,7 +5,6 @@
 """Flask Charm service."""
 
 import logging
-import shlex
 import typing
 
 import ops
@@ -13,7 +12,7 @@ from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 from ops.main import main
 
 from charm_state import CharmState
-from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
+from constants import FLASK_CONTAINER_NAME
 from databases import Databases
 from exceptions import CharmConfigInvalidError, PebbleNotReadyError
 from flask_app import FlaskApp
@@ -38,22 +37,23 @@ class FlaskCharm(ops.CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self._databases = Databases(charm=self)
         self._secret_storage = SecretStorage(charm=self)
-
         try:
             self._charm_state = CharmState.from_charm(
-                charm=self, secret_storage=self._secret_storage, databases=self._databases
+                charm=self, secret_storage=self._secret_storage
             )
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             return
-        self._flask_app = FlaskApp(charm_state=self._charm_state)
         self._webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
-            flask_app=self._flask_app,
         )
+        self._flask_app = FlaskApp(
+            charm=self, charm_state=self._charm_state, webserver=self._webserver
+        )
+        self._databases = Databases(charm=self, flask_app=self._flask_app)
+        self._charm_state.database_uris = self._databases.get_uris()
         self._ingress = IngressPerAppRequirer(
             self,
             port=self._charm_state.flask_port,
@@ -101,73 +101,13 @@ class FlaskCharm(ops.CharmBase):
         container = self.unit.get_container(FLASK_CONTAINER_NAME)
         return container
 
-    @property
-    def _is_precondition_satisfied(self) -> bool:
-        """Check if the precondition for the Flask application has been satisfied.
-
-        Preconditions include:
-            1. Flask workload container is ready
-            2. Secret storage has been initialized
-
-        Return:
-            True if all preconditions is satisfied.
-        """
-        try:
-            self.container()
-        except PebbleNotReadyError:
-            logger.info("pebble client in the Flask container is not ready")
-            return False
-        if not self._secret_storage.is_initialized:
-            logger.info("secret storage is not initialized, defer config-changed")
-            return False
-        return True
-
-    def _restart_flask_application(self) -> None:
-        """Start or restart the flask application with the latest charm configuration.
-
-        The flask charm must be ready (i.e. preconditions meet) before calling this function.
-        """
-        container = self.container()
-        container.add_layer("flask-app", self._flask_layer(), combine=True)
-        is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
-        try:
-            self._webserver.update_config(is_webserver_running=is_webserver_running)
-        except CharmConfigInvalidError as exc:
-            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
-            return
-        container.replan()
-        self._update_app_and_unit_status(ops.ActiveStatus())
-
-    def _on_config_changed(self, event: ops.EventBase) -> None:
+    def _on_config_changed(self, _event: ops.EventBase) -> None:
         """Configure the flask pebble service layer.
 
         Args:
-            event: the config-changed event that triggers this callback function.
+            _event: the config-changed event that triggers this callback function.
         """
-        if not self._is_precondition_satisfied:
-            logger.info("charm hasn't finished the initialization, defer config-changed")
-            event.defer()
-            return
-        self._restart_flask_application()
-
-    def _flask_layer(self) -> ops.pebble.LayerDict:
-        """Generate the pebble layer definition for flask application.
-
-        Returns:
-            The pebble layer definition for flask application.
-        """
-        environment = self._flask_app.flask_environment()
-        return ops.pebble.LayerDict(
-            services={
-                FLASK_SERVICE_NAME: {
-                    "override": "replace",
-                    "summary": "Flask application service",
-                    "command": shlex.join(self._webserver.command),
-                    "startup": "enabled",
-                    "environment": environment,
-                }
-            },
-        )
+        self._flask_app.restart_flask()
 
     def _on_statsd_prometheus_exporter_pebble_ready(self, _event: ops.PebbleReadyEvent) -> None:
         """Handle the statsd-prometheus-exporter-pebble-ready event."""
@@ -204,20 +144,20 @@ class FlaskCharm(ops.CharmBase):
         if not self.unit.is_leader():
             event.fail("only leader unit can rotate secret key")
             return
-        if not self._is_precondition_satisfied:
+        if not self._secret_storage.is_initialized:
             event.fail("flask charm is still initializing")
             return
         self._secret_storage.reset_flask_secret_key()
         event.set_results({"status": "success"})
-        self._restart_flask_application()
+        self._flask_app.restart_flask()
 
-    def _on_secret_storage_relation_changed(self, event: ops.RelationEvent) -> None:
+    def _on_secret_storage_relation_changed(self, _event: ops.RelationEvent) -> None:
         """Handle the secret-storage-relation-changed event.
 
         Args:
-            event: the action event that trigger this callback.
+            _event: the action event that triggers this callback.
         """
-        self._on_config_changed(event)
+        self._flask_app.restart_flask()
 
 
 if __name__ == "__main__":  # pragma: nocover

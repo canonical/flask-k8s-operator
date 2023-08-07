@@ -14,7 +14,6 @@ from ops.pebble import ExecError, PathError
 from charm_state import CharmState
 from constants import FLASK_SERVICE_NAME
 from exceptions import CharmConfigInvalidError
-from flask_app import FlaskApp
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +26,15 @@ class GunicornWebserver:
 
     """
 
-    def __init__(
-        self, charm_state: CharmState, flask_container: ops.Container, flask_app: FlaskApp
-    ):
+    def __init__(self, charm_state: CharmState, flask_container: ops.Container):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:
             charm_state: The state of the charm that the GunicornWebserver instance belongs to.
             flask_container: The Flask container in this charm unit.
-            flask_app: The Flask application instance.
         """
         self._charm_state = charm_state
         self._flask_container = flask_container
-        self._flask_app = flask_app
 
     @property
     def _config(self) -> str:
@@ -112,15 +107,27 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         """
         return signal.SIGHUP
 
-    def _check_config(self) -> None:
-        """Execute a command to validate the flask configuration in the container.
+    def update_config(self, flask_environment: dict[str, str], is_webserver_running: bool) -> None:
+        """Update and apply the configuration file of the web server.
+
+        Args:
+            flask_environment: Environment variables used to run the flask application.
+            is_webserver_running: Indicates if the web server container is currently running.
 
         Raises:
-            CharmConfigInvalidError: If the web server configuration check fails.
+            CharmConfigInvalidError: if the charm configuration is not valid.
         """
-        container = self._flask_container
-        exec_process = container.exec(
-            self._check_config_command, environment=self._flask_app.flask_environment()
+        self._prepare_flask_log_dir()
+        webserver_config_path = str(self._config_path)
+        try:
+            current_webserver_config = self._flask_container.pull(webserver_config_path)
+        except PathError:
+            current_webserver_config = None
+        self._flask_container.push(webserver_config_path, self._config)
+        if current_webserver_config == self._config:
+            return
+        exec_process = self._flask_container.exec(
+            self._check_config_command, environment=flask_environment
         )
         try:
             exec_process.wait_output()
@@ -133,23 +140,6 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
             raise CharmConfigInvalidError(
                 "Webserver configuration check failed, please review your charm configuration"
             ) from exc
-
-    def update_config(self, is_webserver_running: bool) -> None:
-        """Update and apply the configuration file of the web server.
-
-        Args:
-            is_webserver_running: Indicates if the web server container is currently running.
-        """
-        self._prepare_flask_log_dir()
-        webserver_config_path = str(self._config_path)
-        try:
-            current_webserver_config = self._flask_container.pull(webserver_config_path)
-        except PathError:
-            current_webserver_config = None
-        self._flask_container.push(webserver_config_path, self._config)
-        if current_webserver_config == self._config:
-            return
-        self._check_config()
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
             self._flask_container.send_signal(self._reload_signal, FLASK_SERVICE_NAME)

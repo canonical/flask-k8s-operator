@@ -8,14 +8,14 @@
 
 import json
 import typing
-import unittest.mock
 
 import pytest
 from ops.testing import Harness
 
 from charm_state import CharmState
-from constants import FLASK_ENV_CONFIG_PREFIX
+from constants import FLASK_CONTAINER_NAME, FLASK_ENV_CONFIG_PREFIX
 from flask_app import FlaskApp
+from webserver import GunicornWebserver
 
 
 @pytest.mark.parametrize(
@@ -34,14 +34,17 @@ def test_flask_env(harness: Harness, flask_config: dict):
     """
     harness.begin_with_initial_hooks()
     charm_state = CharmState(
-        secret_storage=harness.charm._charm_state._secret_storage,
+        flask_secret_key="foobar",
+        is_secret_storage_ready=True,
         flask_config=flask_config,
-        databases=harness.charm._databases,
     )
-    flask_app = FlaskApp(charm_state=charm_state)
-    env = flask_app.flask_environment()
-    secret_key = env["FLASK_SECRET_KEY"]
-    assert len(secret_key) > 10
+    webserver = GunicornWebserver(
+        charm_state=charm_state,
+        flask_container=harness.model.unit.get_container(FLASK_CONTAINER_NAME),
+    )
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    env = flask_app._flask_environment()
+    assert env["FLASK_SECRET_KEY"] == "foobar"
     del env["FLASK_SECRET_KEY"]
     assert env == {
         f"{FLASK_ENV_CONFIG_PREFIX}{k.upper()}": v if isinstance(v, str) else json.dumps(v)
@@ -77,21 +80,28 @@ HTTP_PROXY_TEST_PARAMS = [
     "set_env, expected",
     HTTP_PROXY_TEST_PARAMS,
 )
-def test_http_proxy(set_env: typing.Dict[str, str], expected: typing.Dict[str, str], monkeypatch):
+def test_http_proxy(
+    harness: Harness, set_env: typing.Dict[str, str], expected: typing.Dict[str, str], monkeypatch
+):
     """
     arrange: set juju charm http proxy related environment variables.
     act: generate a flask environment.
     assert: flask_environment generated should contain proper proxy environment variables.
     """
+    harness.begin()
     for set_env_name, set_env_value in set_env.items():
         monkeypatch.setenv(set_env_name, set_env_value)
     charm_state = CharmState(
-        secret_storage=unittest.mock.MagicMock(),
+        flask_secret_key="",
+        is_secret_storage_ready=True,
         flask_config={},
-        databases=unittest.mock.MagicMock(),
     )
-    flask_app = FlaskApp(charm_state=charm_state)
-    env = flask_app.flask_environment()
+    webserver = GunicornWebserver(
+        charm_state=charm_state,
+        flask_container=harness.model.unit.get_container(FLASK_CONTAINER_NAME),
+    )
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    env = flask_app._flask_environment()
     expected_env: typing.Dict[str, typing.Optional[str]] = {
         "http_proxy": None,
         "https_proxy": None,

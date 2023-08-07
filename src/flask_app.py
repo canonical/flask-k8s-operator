@@ -3,23 +3,37 @@
 
 """Provide the FlaskApp class to represent the Flask application."""
 import json
+import logging
+import shlex
+
+import ops
 
 from charm_state import KNOWN_CHARM_CONFIG, CharmState
-from constants import FLASK_ENV_CONFIG_PREFIX
+from constants import FLASK_ENV_CONFIG_PREFIX, FLASK_SERVICE_NAME
+from exceptions import CharmConfigInvalidError
+from webserver import GunicornWebserver
+
+logger = logging.getLogger(__name__)
 
 
 class FlaskApp:  # pylint: disable=too-few-public-methods
     """A class representing the Flask application."""
 
-    def __init__(self, charm_state: CharmState):
+    def __init__(
+        self, charm: ops.CharmBase, charm_state: CharmState, webserver: GunicornWebserver
+    ):
         """Initialize a new instance of the FlaskApp class.
 
         Args:
+            charm: The main charm object.
             charm_state: The state of the charm that the FlaskApp instance belongs to.
+            webserver: The webserver manager object.
         """
+        self._charm = charm
         self._charm_state = charm_state
+        self._webserver = webserver
 
-    def flask_environment(self) -> dict[str, str]:
+    def _flask_environment(self) -> dict[str, str]:
         """Generate a Flask environment dictionary from the charm Flask configurations.
 
         The Flask environment generation follows these rules:
@@ -54,3 +68,53 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
                 env[proxy_variable.upper()] = str(proxy_value)
         env.update(self._charm_state.database_uris)
         return env
+
+    def _flask_layer(self) -> ops.pebble.LayerDict:
+        """Generate the pebble layer definition for flask application.
+
+        Returns:
+            The pebble layer definition for flask application.
+        """
+        environment = self._flask_environment()
+        return ops.pebble.LayerDict(
+            services={
+                FLASK_SERVICE_NAME: {
+                    "override": "replace",
+                    "summary": "Flask application service",
+                    "command": shlex.join(self._webserver.command),
+                    "startup": "enabled",
+                    "environment": environment,
+                }
+            },
+        )
+
+    def _update_app_and_unit_status(self, status: ops.StatusBase) -> None:
+        """Update the application and unit status.
+
+        Args:
+            status: the desired application and unit status.
+        """
+        self._charm.unit.status = status
+        if self._charm.unit.is_leader():
+            self._charm.app.status = status
+
+    def restart_flask(self) -> None:
+        """Restart or start the flask service if not started with the latest configuration."""
+        container = self._charm.unit.get_container("flask-app")
+        if not container.can_connect():
+            logger.info("pebble client in the Flask container is not ready")
+            return
+        if not self._charm_state.is_secret_storage_ready:
+            logger.info("secret storage is not initialized, defer config-changed")
+            return
+        container.add_layer("flask-app", self._flask_layer(), combine=True)
+        is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
+        try:
+            self._webserver.update_config(
+                flask_environment=self._flask_environment(),
+                is_webserver_running=is_webserver_running,
+            )
+        except CharmConfigInvalidError as exc:
+            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
+        container.replan()
+        self._update_app_and_unit_status(ops.ActiveStatus())

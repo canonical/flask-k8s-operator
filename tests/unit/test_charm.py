@@ -11,7 +11,10 @@ import unittest.mock
 import yaml
 from ops.testing import Harness
 
-from charm_state import KNOWN_CHARM_CONFIG
+from charm_state import KNOWN_CHARM_CONFIG, CharmState
+from constants import FLASK_CONTAINER_NAME
+from flask_app import FlaskApp
+from webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/srv/flask"
 
@@ -22,18 +25,23 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     act: start the flask charm and set flask-app container to be ready.
     assert: flask charm should submit the correct flaks pebble layer to pebble.
     """
-    harness.begin_with_initial_hooks()
-    harness.set_can_connect(harness.model.unit.containers["flask-app"], True)
-    harness.framework.reemit()
+    harness.begin()
+    secret_storage = unittest.mock.MagicMock()
+    secret_storage.is_initialized = True
+    secret_storage.get_flask_secret_key.return_value = "0" * 16
+    charm_state = CharmState.from_charm(charm=harness.charm, secret_storage=secret_storage)
+    webserver = GunicornWebserver(
+        charm_state=charm_state,
+        flask_container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),
+    )
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app.restart_flask()
     flask_layer = harness.get_container_pebble_plan("flask-app").to_dict()["services"]["flask-app"]
-    flask_secret_key = flask_layer["environment"]["FLASK_SECRET_KEY"]
-    assert len(flask_secret_key) > 10
-    del flask_layer["environment"]["FLASK_SECRET_KEY"]
     assert flask_layer == {
         "override": "replace",
         "summary": "Flask application service",
         "command": f"python3 -m gunicorn -c {FLASK_BASE_DIR}/gunicorn.conf.py app:app",
-        "environment": {"FLASK_PREFERRED_URL_SCHEME": "HTTPS"},
+        "environment": {"FLASK_PREFERRED_URL_SCHEME": "HTTPS", "FLASK_SECRET_KEY": "0" * 16},
         "startup": "enabled",
     }
 
@@ -63,7 +71,3 @@ def test_rotate_secret_key_action(harness: Harness):
     harness.charm._on_rotate_secret_key_action(action_event)
     new_secret_key = harness.get_relation_data(0, harness.charm.app)["flask_secret_key"]
     assert secret_key != new_secret_key
-    pebble_plan = harness.get_container_pebble_plan("flask-app").to_dict()
-    assert (
-        new_secret_key == pebble_plan["services"]["flask-app"]["environment"]["FLASK_SECRET_KEY"]
-    )

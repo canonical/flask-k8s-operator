@@ -21,7 +21,6 @@ from pydantic import (  # pylint: disable=no-name-in-module
 )
 
 from charm_types import WebserverConfig
-from databases import Databases
 from exceptions import CharmConfigInvalidError
 from secret_storage import SecretStorage
 
@@ -114,16 +113,17 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         flask_error_log: the file path for the Flask error log.
         flask_statsd_host: the statsd server host for Flask metrics.
         flask_secret_key: the charm managed flask secret key.
+        is_secret_storage_ready: whether the secret storage system is ready.
         proxy: proxy information.
     """
 
     def __init__(
         self,
-        secret_storage: SecretStorage,
-        databases: Databases,
         *,
         app_config: dict[str, int | str | bool] | None = None,
         flask_config: dict[str, int | str] | None = None,
+        flask_secret_key: str | None = None,
+        is_secret_storage_ready: bool,
         webserver_workers: int | None = None,
         webserver_threads: int | None = None,
         webserver_keepalive: int | None = None,
@@ -133,10 +133,10 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         """Initialize a new instance of the CharmState class.
 
         Args:
-            secret_storage: The secret storage manager associated with the charm.
-            databases: The database manager associated with the charm.
             app_config: User-defined configuration values for the Flask configuration.
             flask_config: The value of the flask_config charm configuration.
+            flask_secret_key: The secret storage manager associated with the charm.
+            is_secret_storage_ready: whether the secret storage system is ready.
             webserver_workers: The number of workers to use for the web server,
                 or None if not specified.
             webserver_threads: The number of threads per worker to use for the web server,
@@ -147,8 +147,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                 or None if not specified.
             webserver_wsgi_path: The WSGI application path, or None if not specified.
         """
-        self._secret_storage = secret_storage
-        self._databases = databases
         self._webserver_workers = webserver_workers
         self._webserver_threads = webserver_threads
         self._webserver_keepalive = webserver_keepalive
@@ -158,6 +156,9 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         )
         self._flask_config = flask_config if flask_config is not None else {}
         self._app_config = app_config if app_config is not None else {}
+        self._is_secret_storage_ready = is_secret_storage_ready
+        self._flask_secret_key = flask_secret_key
+        self.database_uris: dict[str, str] = {}
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -176,15 +177,12 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         )
 
     @classmethod
-    def from_charm(
-        cls, charm: "FlaskCharm", secret_storage: SecretStorage, databases: Databases
-    ) -> "CharmState":
+    def from_charm(cls, charm: "FlaskCharm", secret_storage: SecretStorage) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
         Args:
             charm: The charm instance associated with this state.
             secret_storage: The secret storage manager associated with the charm.
-            databases: The database manager associated with the charm.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -211,8 +209,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             error_field_str = " ".join(f"flask_{f}" for f in error_fields)
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
         return cls(
-            secret_storage=secret_storage,
-            databases=databases,
             flask_config=valid_flask_config.dict(exclude_unset=True, exclude_none=True),
             app_config=typing.cast(dict[str, str | int | bool], app_config),
             webserver_workers=int(workers) if workers is not None else None,
@@ -220,6 +216,10 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             webserver_keepalive=int(keepalive) if keepalive is not None else None,
             webserver_timeout=int(timeout) if timeout is not None else None,
             webserver_wsgi_path=charm.config.get("webserver_wsgi_path"),
+            flask_secret_key=secret_storage.get_flask_secret_key()
+            if secret_storage.is_initialized
+            else None,
+            is_secret_storage_ready=secret_storage.is_initialized,
         )
 
     @property
@@ -331,14 +331,19 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             The flask secret key stored in the SecretStorage.
+
+        Raises:
+            RuntimeError: raised when accessing flask secret key before secret storage is ready
         """
-        return self._secret_storage.get_flask_secret_key()
+        if self._flask_secret_key is None:
+            raise RuntimeError("access flask secret key before secret storage is ready")
+        return self._flask_secret_key
 
     @property
-    def database_uris(self) -> dict[str, str]:
-        """Return a mapping of available database environment variable to database uris.
+    def is_secret_storage_ready(self) -> bool:
+        """Return whether the secret storage system is ready.
 
         Returns:
-            A mapping of available database environment variable to database uris.
+            Whether the secret storage system is ready.
         """
-        return self._databases.get_uris()
+        return self._is_secret_storage_ready
