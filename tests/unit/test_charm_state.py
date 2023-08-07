@@ -2,15 +2,17 @@
 # See LICENSE file for licensing details.
 
 """Flask charm state unit tests."""
-
-# this is a unit test file
-# pylint: disable=protected-access
+import unittest.mock
 
 import pytest
 from ops.testing import Harness
 
 from charm_state import CharmState
 from exceptions import CharmConfigInvalidError
+
+# this is a unit test file
+# pylint: disable=protected-access
+
 
 CHARM_STATE_FLASK_CONFIG_TEST_PARAMS = [
     pytest.param(
@@ -33,19 +35,19 @@ CHARM_STATE_FLASK_CONFIG_TEST_PARAMS = [
 
 
 @pytest.mark.parametrize("charm_config, flask_config", CHARM_STATE_FLASK_CONFIG_TEST_PARAMS)
-def test_charm_state_flask_config(
-    harness: Harness, charm_config: dict, flask_config: dict
-) -> None:
+def test_charm_state_flask_config(charm_config: dict, flask_config: dict) -> None:
     """
     arrange: none
     act: set flask_* charm configurations.
     assert: flask_config in the charm state should reflect changes in charm configurations.
     """
-    harness.begin()
-    harness.update_config(charm_config)
+    config = {"webserver_wsgi_path": "app:app", "flask_preferred_url_scheme": "HTTPS"}
+    config.update(charm_config)
+    secret_storage_mock = unittest.mock.MagicMock(is_initialized=True)
+    secret_storage_mock.get_flask_secret_key.return_value = ""
     charm_state = CharmState.from_charm(
-        secret_storage=harness.charm._secret_storage,
-        charm=harness.charm,
+        secret_storage=secret_storage_mock,
+        charm=unittest.mock.MagicMock(config=config),
     )
     assert charm_state.flask_config == flask_config
 
