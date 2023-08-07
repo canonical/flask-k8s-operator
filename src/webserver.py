@@ -138,7 +138,8 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
                 exc.stderr,
             )
             raise CharmConfigInvalidError(
-                "Webserver configuration check failed, please review your charm configuration"
+                "Webserver configuration check failed, "
+                "please review your charm configuration or database relation"
             ) from exc
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
