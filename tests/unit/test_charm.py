@@ -29,7 +29,9 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     secret_storage = unittest.mock.MagicMock()
     secret_storage.is_initialized = True
     secret_storage.get_flask_secret_key.return_value = "0" * 16
-    charm_state = CharmState.from_charm(charm=harness.charm, secret_storage=secret_storage)
+    charm_state = CharmState.from_charm(
+        charm=harness.charm, secret_storage=secret_storage, database_uris={}
+    )
     webserver = GunicornWebserver(
         charm_state=charm_state,
         flask_container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),

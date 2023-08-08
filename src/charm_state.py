@@ -121,6 +121,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         self,
         *,
         app_config: dict[str, int | str | bool] | None = None,
+        database_uris: dict[str, str] | None = None,
         flask_config: dict[str, int | str] | None = None,
         flask_secret_key: str | None = None,
         is_secret_storage_ready: bool,
@@ -136,6 +137,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             app_config: User-defined configuration values for the Flask configuration.
             flask_config: The value of the flask_config charm configuration.
             flask_secret_key: The secret storage manager associated with the charm.
+            database_uris: The database uri environment variables.
             is_secret_storage_ready: whether the secret storage system is ready.
             webserver_workers: The number of workers to use for the web server,
                 or None if not specified.
@@ -158,7 +160,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         self._app_config = app_config if app_config is not None else {}
         self._is_secret_storage_ready = is_secret_storage_ready
         self._flask_secret_key = flask_secret_key
-        self.database_uris: dict[str, str] = {}
+        self.database_uris = database_uris if database_uris is not None else {}
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -177,12 +179,15 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         )
 
     @classmethod
-    def from_charm(cls, charm: "FlaskCharm", secret_storage: SecretStorage) -> "CharmState":
+    def from_charm(
+        cls, charm: "FlaskCharm", secret_storage: SecretStorage, database_uris: dict[str, str]
+    ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
         Args:
             charm: The charm instance associated with this state.
             secret_storage: The secret storage manager associated with the charm.
+            database_uris: The database uri environment variables.
 
         Return:
             The CharmState instance created by the provided charm.
@@ -211,6 +216,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return cls(
             flask_config=valid_flask_config.dict(exclude_unset=True, exclude_none=True),
             app_config=typing.cast(dict[str, str | int | bool], app_config),
+            database_uris=database_uris,
             webserver_workers=int(workers) if workers is not None else None,
             webserver_threads=int(threads) if threads is not None else None,
             webserver_keepalive=int(keepalive) if keepalive is not None else None,

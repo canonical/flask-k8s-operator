@@ -5,11 +5,9 @@
 
 import unittest.mock
 
-import ops
 import pytest
-from ops.testing import Harness
 
-from constants import FLASK_CONTAINER_NAME, FLASK_DATABASE_NAME
+from constants import FLASK_DATABASE_NAME
 from databases import Databases
 
 DATABASE_URL_TEST_PARAMS = [
@@ -82,8 +80,6 @@ DATABASE_URL_TEST_PARAMS = [
 
 @pytest.mark.parametrize("relations, expected_output", DATABASE_URL_TEST_PARAMS)
 def test_database_uri_mocked(
-    monkeypatch: pytest.MonkeyPatch,
-    harness: Harness,
     relations: tuple,
     expected_output: dict,
 ) -> None:
@@ -92,15 +88,6 @@ def test_database_uri_mocked(
     act: start the flask charm, set flask-app container to be ready and relate it to the db.
     assert: get_uris() should return the correct databaseURI dict
     """
-    container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
-    send_signal_mock = unittest.mock.MagicMock()
-    monkeypatch.setattr(container, "send_signal", send_signal_mock)
-
-    databases = Databases(
-        unittest.mock.MagicMock(), unittest.mock.MagicMock(), unittest.mock.MagicMock()
-    )
-    assert not databases.get_uris()
-
     # Create the databases mock with the relation data
     _databases = {}
     for relation in relations:
@@ -112,8 +99,4 @@ def test_database_uri_mocked(
         database_require.database = relation["data"].get("database", FLASK_DATABASE_NAME)
         _databases[interface] = database_require
 
-    # Allowing protected access to test the output
-    # pylint: disable=protected-access
-    databases._databases = _databases
-
-    assert databases.get_uris() == expected_output
+    assert Databases.get_uris(_databases) == expected_output

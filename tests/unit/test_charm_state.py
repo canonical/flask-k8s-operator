@@ -49,6 +49,7 @@ def test_charm_state_flask_config(charm_config: dict, flask_config: dict) -> Non
     charm_state = CharmState.from_charm(
         secret_storage=SECRET_STORAGE_MOCK,
         charm=unittest.mock.MagicMock(config=config),
+        database_uris={},
     )
     assert charm_state.flask_config == flask_config
 
@@ -76,6 +77,7 @@ def test_charm_state_invalid_flask_config(charm_config: dict) -> None:
         CharmState.from_charm(
             secret_storage=SECRET_STORAGE_MOCK,
             charm=unittest.mock.MagicMock(config=config),
+            database_uris={},
         )
     for config_key in charm_config:
         assert config_key in exc.value.msg
@@ -99,5 +101,6 @@ def test_charm_state_wsgi_path(charm_config: dict, wsgi_path: str) -> None:
     charm_state = CharmState.from_charm(
         secret_storage=SECRET_STORAGE_MOCK,
         charm=unittest.mock.MagicMock(config=config),
+        database_uris={},
     )
     assert charm_state.flask_wsgi_app_path == wsgi_path

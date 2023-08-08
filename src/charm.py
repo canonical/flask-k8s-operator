@@ -34,9 +34,12 @@ class FlaskCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self._secret_storage = SecretStorage(charm=self)
+        self._database_requirers = Databases.make_database_requirers(self)
         try:
             self._charm_state = CharmState.from_charm(
-                charm=self, secret_storage=self._secret_storage
+                charm=self,
+                secret_storage=self._secret_storage,
+                database_uris=Databases.get_uris(self._database_requirers),
             )
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
@@ -46,9 +49,11 @@ class FlaskCharm(ops.CharmBase):
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
         self._databases = Databases(
-            charm=self, charm_state=self._charm_state, webserver=self._webserver
+            charm=self,
+            charm_state=self._charm_state,
+            webserver=self._webserver,
+            database_requirers=self._database_requirers,
         )
-        self._charm_state.database_uris = self._databases.get_uris()
         self._ingress = IngressPerAppRequirer(
             self,
             port=self._charm_state.flask_port,
