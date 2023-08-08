@@ -15,7 +15,7 @@ from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
 from databases import Databases
 from exceptions import CharmConfigInvalidError, PebbleNotReadyError
-from flask_app import FlaskApp
+from flask_app import restart_flask
 from observability import Observability
 from secret_storage import SecretStorage
 from webserver import GunicornWebserver
@@ -45,10 +45,9 @@ class FlaskCharm(ops.CharmBase):
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
-        self._flask_app = FlaskApp(
+        self._databases = Databases(
             charm=self, charm_state=self._charm_state, webserver=self._webserver
         )
-        self._databases = Databases(charm=self, flask_app=self._flask_app)
         self._charm_state.database_uris = self._databases.get_uris()
         self._ingress = IngressPerAppRequirer(
             self,
@@ -70,16 +69,6 @@ class FlaskCharm(ops.CharmBase):
         self.framework.observe(
             self.on.secret_storage_relation_changed, self._on_secret_storage_relation_changed
         )
-
-    def _update_app_and_unit_status(self, status: ops.StatusBase) -> None:
-        """Update the application and unit status.
-
-        Args:
-            status: the desired application and unit status.
-        """
-        self.unit.status = status
-        if self.unit.is_leader():
-            self.app.status = status
 
     def container(self) -> ops.Container:
         """Get the flask application workload container controller.
@@ -103,7 +92,7 @@ class FlaskCharm(ops.CharmBase):
         Args:
             _event: the config-changed event that triggers this callback function.
         """
-        self._flask_app.restart_flask()
+        self._restart_flask()
 
     def _on_statsd_prometheus_exporter_pebble_ready(self, _event: ops.PebbleReadyEvent) -> None:
         """Handle the statsd-prometheus-exporter-pebble-ready event."""
@@ -145,7 +134,7 @@ class FlaskCharm(ops.CharmBase):
             return
         self._secret_storage.reset_flask_secret_key()
         event.set_results({"status": "success"})
-        self._flask_app.restart_flask()
+        self._restart_flask()
 
     def _on_secret_storage_relation_changed(self, _event: ops.RelationEvent) -> None:
         """Handle the secret-storage-relation-changed event.
@@ -153,7 +142,25 @@ class FlaskCharm(ops.CharmBase):
         Args:
             _event: the action event that triggers this callback.
         """
-        self._flask_app.restart_flask()
+        self._restart_flask()
+
+    def _update_app_and_unit_status(self, status: ops.StatusBase) -> None:
+        """Update the application and unit status.
+
+        Args:
+            status: the desired application and unit status.
+        """
+        self.unit.status = status
+        if self.unit.is_leader():
+            self.app.status = status
+
+    def _restart_flask(self) -> None:
+        """Restart or start the flask service if not started with the latest configuration."""
+        try:
+            restart_flask(charm=self, charm_state=self._charm_state, webserver=self._webserver)
+            self._update_app_and_unit_status(ops.ActiveStatus())
+        except CharmConfigInvalidError as exc:
+            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
 
 
 if __name__ == "__main__":  # pragma: nocover

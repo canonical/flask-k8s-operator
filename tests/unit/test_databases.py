@@ -96,7 +96,9 @@ def test_database_uri_mocked(
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
 
-    databases = Databases(unittest.mock.MagicMock(), unittest.mock.MagicMock())
+    databases = Databases(
+        unittest.mock.MagicMock(), unittest.mock.MagicMock(), unittest.mock.MagicMock()
+    )
     assert not databases.get_uris()
 
     # Create the databases mock with the relation data

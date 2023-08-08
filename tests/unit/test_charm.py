@@ -13,7 +13,7 @@ from ops.testing import Harness
 
 from charm_state import KNOWN_CHARM_CONFIG, CharmState
 from constants import FLASK_CONTAINER_NAME
-from flask_app import FlaskApp
+from flask_app import restart_flask
 from webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/srv/flask"
@@ -34,8 +34,7 @@ def test_flask_pebble_layer(harness: Harness) -> None:
         charm_state=charm_state,
         flask_container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),
     )
-    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
-    flask_app.restart_flask()
+    restart_flask(charm=harness.charm, charm_state=charm_state, webserver=webserver)
     flask_layer = harness.get_container_pebble_plan("flask-app").to_dict()["services"]["flask-app"]
     assert flask_layer == {
         "override": "replace",
