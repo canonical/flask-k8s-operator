@@ -8,7 +8,7 @@ import unittest.mock
 import pytest
 
 from constants import FLASK_DATABASE_NAME
-from databases import Databases
+from databases import get_uris
 
 DATABASE_URL_TEST_PARAMS = [
     (
@@ -99,4 +99,4 @@ def test_database_uri_mocked(
         database_require.database = relation["data"].get("database", FLASK_DATABASE_NAME)
         _databases[interface] = database_require
 
-    assert Databases.get_uris(_databases) == expected_output
+    assert get_uris(_databases) == expected_output

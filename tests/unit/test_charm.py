@@ -28,7 +28,8 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     harness.begin()
     secret_storage = unittest.mock.MagicMock()
     secret_storage.is_initialized = True
-    secret_storage.get_flask_secret_key.return_value = "0" * 16
+    test_key = "0" * 16
+    secret_storage.get_flask_secret_key.return_value = test_key
     charm_state = CharmState.from_charm(
         charm=harness.charm, secret_storage=secret_storage, database_uris={}
     )
@@ -42,7 +43,7 @@ def test_flask_pebble_layer(harness: Harness) -> None:
         "override": "replace",
         "summary": "Flask application service",
         "command": f"python3 -m gunicorn -c {FLASK_BASE_DIR}/gunicorn.conf.py app:app",
-        "environment": {"FLASK_PREFERRED_URL_SCHEME": "HTTPS", "FLASK_SECRET_KEY": "0" * 16},
+        "environment": {"FLASK_PREFERRED_URL_SCHEME": "HTTPS", "FLASK_SECRET_KEY": test_key},
         "startup": "enabled",
     }
 

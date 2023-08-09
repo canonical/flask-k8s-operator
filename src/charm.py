@@ -13,7 +13,7 @@ from ops.main import main
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
-from databases import Databases
+from databases import Databases, get_uris, make_database_requirers
 from exceptions import CharmConfigInvalidError, PebbleNotReadyError
 from flask_app import restart_flask
 from observability import Observability
@@ -34,12 +34,12 @@ class FlaskCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self._secret_storage = SecretStorage(charm=self)
-        self._database_requirers = Databases.make_database_requirers(self)
+        self._database_requirers = make_database_requirers(self)
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
                 secret_storage=self._secret_storage,
-                database_uris=Databases.get_uris(self._database_requirers),
+                database_uris=get_uris(self._database_requirers),
             )
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
