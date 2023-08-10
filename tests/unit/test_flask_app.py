@@ -8,12 +8,13 @@
 
 import json
 import typing
+import unittest.mock
 
 import pytest
 
 from charm_state import CharmState
 from constants import FLASK_ENV_CONFIG_PREFIX
-from flask_app import _flask_environment
+from flask_app import FlaskApp
 
 
 @pytest.mark.parametrize(
@@ -35,7 +36,12 @@ def test_flask_env(flask_config: dict):
         is_secret_storage_ready=True,
         flask_config=flask_config,
     )
-    env = _flask_environment(charm_state)
+    flask_app = FlaskApp(
+        charm=unittest.mock.MagicMock(),
+        charm_state=charm_state,
+        webserver=unittest.mock.MagicMock(),
+    )
+    env = flask_app._flask_environment()
     assert env["FLASK_SECRET_KEY"] == "foobar"
     del env["FLASK_SECRET_KEY"]
     assert env == {
@@ -85,7 +91,12 @@ def test_http_proxy(set_env: typing.Dict[str, str], expected: typing.Dict[str, s
         is_secret_storage_ready=True,
         flask_config={},
     )
-    env = _flask_environment(charm_state)
+    flask_app = FlaskApp(
+        charm=unittest.mock.MagicMock(),
+        charm_state=charm_state,
+        webserver=unittest.mock.MagicMock(),
+    )
+    env = flask_app._flask_environment()
     expected_env: typing.Dict[str, typing.Optional[str]] = {
         "http_proxy": None,
         "https_proxy": None,

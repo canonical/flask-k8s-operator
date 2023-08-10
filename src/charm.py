@@ -15,7 +15,7 @@ from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
 from databases import Databases, get_uris, make_database_requirers
 from exceptions import CharmConfigInvalidError, PebbleNotReadyError
-from flask_app import restart_flask
+from flask_app import FlaskApp
 from observability import Observability
 from secret_storage import SecretStorage
 from webserver import GunicornWebserver
@@ -34,12 +34,12 @@ class FlaskCharm(ops.CharmBase):
         """
         super().__init__(*args)
         self._secret_storage = SecretStorage(charm=self)
-        self._database_requirers = make_database_requirers(self)
+        database_requirers = make_database_requirers(self)
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
                 secret_storage=self._secret_storage,
-                database_uris=get_uris(self._database_requirers),
+                database_uris=get_uris(database_requirers),
             )
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
@@ -48,11 +48,13 @@ class FlaskCharm(ops.CharmBase):
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
+        self._flask_app = FlaskApp(
+            charm=self, charm_state=self._charm_state, webserver=self._webserver
+        )
         self._databases = Databases(
             charm=self,
-            charm_state=self._charm_state,
-            webserver=self._webserver,
-            database_requirers=self._database_requirers,
+            flask_app=self._flask_app,
+            database_requirers=database_requirers,
         )
         self._ingress = IngressPerAppRequirer(
             self,
@@ -162,7 +164,7 @@ class FlaskCharm(ops.CharmBase):
     def _restart_flask(self) -> None:
         """Restart or start the flask service if not started with the latest configuration."""
         try:
-            restart_flask(charm=self, charm_state=self._charm_state, webserver=self._webserver)
+            self._flask_app.restart_flask()
             self._update_app_and_unit_status(ops.ActiveStatus())
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))

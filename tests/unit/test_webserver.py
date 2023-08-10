@@ -15,7 +15,7 @@ from ops.testing import Harness
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
-from flask_app import _flask_environment, restart_flask
+from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/srv/flask"
@@ -73,9 +73,10 @@ def test_gunicorn_config(
         **charm_state_params,
     )
     webserver = GunicornWebserver(charm_state=charm_state, flask_container=container)
-    restart_flask(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app.restart_flask()
     webserver.update_config(
-        is_webserver_running=False, flask_environment=_flask_environment(charm_state)
+        is_webserver_running=False, flask_environment=flask_app._flask_environment()
     )
     assert container.pull(f"{FLASK_BASE_DIR}/gunicorn.conf.py").read() == config_file
 
@@ -94,10 +95,11 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running):
     container.push(f"{FLASK_BASE_DIR}/gunicorn.conf.py", "")
     charm_state = CharmState(flask_secret_key="", is_secret_storage_ready=True)
     webserver = GunicornWebserver(charm_state=charm_state, flask_container=container)
-    restart_flask(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app.restart_flask()
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
     webserver.update_config(
-        is_webserver_running=is_running, flask_environment=_flask_environment(charm_state)
+        is_webserver_running=is_running, flask_environment=flask_app._flask_environment()
     )
     assert send_signal_mock.call_count == (1 if is_running else 0)

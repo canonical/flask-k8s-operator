@@ -11,11 +11,9 @@ import ops
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 
-from charm_state import CharmState
 from constants import FLASK_DATABASE_NAME, FLASK_SUPPORTED_DB_INTERFACES
 from exceptions import CharmConfigInvalidError
-from flask_app import restart_flask
-from webserver import GunicornWebserver
+from flask_app import FlaskApp
 
 logger = logging.getLogger(__name__)
 
@@ -100,23 +98,20 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         charm: ops.CharmBase,
-        charm_state: CharmState,
-        webserver: GunicornWebserver,
+        flask_app: FlaskApp,
         database_requirers: typing.Dict[str, DatabaseRequires],
     ):
         """Initialize a new instance of the Databases class.
 
         Args:
             charm: The main charm. Used for events callbacks.
-            charm_state: The charm's state.
-            webserver: The webserver manager object.
+            flask_app: The flask application manager object.
             database_requirers: Database requirers created by make_database_requirers.
         """
         # The following is necessary to be able to subscribe to callbacks from ops.framework
         super().__init__(charm, "databases")
         self._charm = charm
-        self._charm_state = charm_state
-        self._webserver = webserver
+        self._flask_app = flask_app
         self._databases = database_requirers
         for database_requirer in database_requirers.values():
             self._charm.framework.observe(
@@ -127,7 +122,7 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
                 self._on_database_requires_event,
             )
 
-    def _update_app_and_unit_status(self, status: ops.StatusBase) -> None:
+    def _update_status(self, status: ops.StatusBase) -> None:
         """Update the application and unit status.
 
         Args:
@@ -140,12 +135,10 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
     def _restart_flask(self) -> None:
         """Restart or start the flask service if not started with the latest configuration."""
         try:
-            restart_flask(
-                charm=self._charm, charm_state=self._charm_state, webserver=self._webserver
-            )
-            self._update_app_and_unit_status(ops.ActiveStatus())
+            self._flask_app.restart_flask()
+            self._update_status(ops.ActiveStatus())
         except CharmConfigInvalidError as exc:
-            self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
+            self._update_status(ops.BlockedStatus(exc.msg))
 
     def _on_database_requires_event(self, _event: DatabaseRequiresEvent) -> None:
         """Configure the flask pebble service layer in case of DatabaseRequiresEvent.
