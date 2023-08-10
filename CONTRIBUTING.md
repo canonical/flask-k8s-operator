@@ -18,9 +18,30 @@ that can be used for linting and formatting code when you're preparing contribut
 tox -e fmt           # update your code according to linting rules
 tox -e lint          # code style
 tox -e unit          # unit tests
-tox -e integration   # integration tests
-tox                  # runs 'lint' and 'unit' environments
+tox                  # runs 'lint', 'unit', 'static' and 'code-coverage' environments
 ```
+
+### Integration tests
+
+To run the integration tests locally, you'll need to build the flask image first and load it into docker.  
+the following assume that you are running microk8s locally with the registry plugin.
+
+```shell
+cd sample_rock/
+rockcraft pack
+rockfile="$(find . -name "*.rock" -printf "%f")"
+IFS=_ read -r image_name version _ <<< "$(echo "$rockfile")"
+/snap/rockcraft/current/bin/skopeo --insecure-policy copy "oci-archive:$rockfile" "docker-daemon:$image_name:$version"
+docker tag $image_name:$version localhost:32000/$image_name:$version
+docker push localhost:32000/$image_name:$version
+```
+
+Then you can run the integration tests.
+
+```shell
+tox -e integration -- --flask-app-image localhost:32000/$image_name:$version
+```
+
 
 ## Build the charm
 
