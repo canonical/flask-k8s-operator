@@ -13,4 +13,3 @@ parts:
     build-packages:
     - cargo
     - rustc
-
