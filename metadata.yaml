@@ -9,7 +9,7 @@ docs: https://discourse.charmhub.io/t/flask-k8s-charm-documentation-overview/107
 issues: https://github.com/canonical/flask-k8s-operator/issues
 source: https://github.com/canonical/flask-k8s-operator
 maintainers:
-  - launchpad.net/~canonical-is-devops
+  - https://launchpad.net/~canonical-is-devops
 
 assumes:
   - k8s-api
