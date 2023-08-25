@@ -182,7 +182,7 @@ async def deploy_loki_fixture(
 ):
     """Deploy loki."""
     app = await model.deploy(
-        "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
+        "loki-k8s", application_name=loki_app_name, channel="latest/stable", trust=True
     )
     await model.wait_for_idle(raise_on_blocked=True)
 
