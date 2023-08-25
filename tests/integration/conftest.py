@@ -199,7 +199,7 @@ async def deploy_cos_fixture(
     """Deploy the cos applications."""
     cos_apps = await asyncio.gather(
         model.deploy(
-            "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
+            "grafana-k8s", application_name=grafana_app_name, channel="latest/stable", trust=True
         ),
         model.wait_for_idle(raise_on_blocked=True),
     )
