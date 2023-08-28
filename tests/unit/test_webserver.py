@@ -68,15 +68,16 @@ def test_gunicorn_config(
     container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     charm_state = CharmState(
-        secret_storage=harness.charm._charm_state._secret_storage, **charm_state_params
+        flask_secret_key="",
+        is_secret_storage_ready=True,
+        **charm_state_params,
     )
-    flask_app = FlaskApp(
-        charm_state=charm_state,
+    webserver = GunicornWebserver(charm_state=charm_state, flask_container=container)
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app.restart_flask()
+    webserver.update_config(
+        is_webserver_running=False, flask_environment=flask_app._flask_environment()
     )
-    webserver = GunicornWebserver(
-        charm_state=charm_state, flask_container=container, flask_app=flask_app
-    )
-    webserver.update_config(is_webserver_running=False)
     assert container.pull(f"{FLASK_BASE_DIR}/gunicorn.conf.py").read() == config_file
 
 
@@ -92,14 +93,13 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running):
     container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
     container.push(f"{FLASK_BASE_DIR}/gunicorn.conf.py", "")
-    charm_state = CharmState(
-        secret_storage=harness.charm._charm_state._secret_storage, flask_config={}
-    )
-    flask_app = FlaskApp(charm_state=charm_state)
-    webserver = GunicornWebserver(
-        charm_state=charm_state, flask_container=container, flask_app=flask_app
-    )
+    charm_state = CharmState(flask_secret_key="", is_secret_storage_ready=True)
+    webserver = GunicornWebserver(charm_state=charm_state, flask_container=container)
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app.restart_flask()
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
-    webserver.update_config(is_webserver_running=is_running)
+    webserver.update_config(
+        is_webserver_running=is_running, flask_environment=flask_app._flask_environment()
+    )
     assert send_signal_mock.call_count == (1 if is_running else 0)
