@@ -167,7 +167,7 @@ async def deploy_prometheus_fixture(
     app = await model.deploy(
         "prometheus-k8s",
         application_name=prometheus_app_name,
-        channel="latest/edge",
+        channel="latest/stable",
         trust=True,
     )
     await model.wait_for_idle(raise_on_blocked=True)
@@ -182,7 +182,7 @@ async def deploy_loki_fixture(
 ):
     """Deploy loki."""
     app = await model.deploy(
-        "loki-k8s", application_name=loki_app_name, channel="latest/edge", trust=True
+        "loki-k8s", application_name=loki_app_name, channel="latest/stable", trust=True
     )
     await model.wait_for_idle(raise_on_blocked=True)
 
@@ -199,7 +199,7 @@ async def deploy_cos_fixture(
     """Deploy the cos applications."""
     cos_apps = await asyncio.gather(
         model.deploy(
-            "grafana-k8s", application_name=grafana_app_name, channel="latest/edge", trust=True
+            "grafana-k8s", application_name=grafana_app_name, channel="latest/stable", trust=True
         ),
         model.wait_for_idle(raise_on_blocked=True),
     )
