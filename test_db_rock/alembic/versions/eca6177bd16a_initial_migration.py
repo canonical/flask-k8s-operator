@@ -1,3 +1,6 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 """Initial migration
 
 Revision ID: eca6177bd16a
