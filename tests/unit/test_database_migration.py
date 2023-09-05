@@ -92,7 +92,7 @@ def test_database_migration_rerun(harness: Harness):
     harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=1)
     with pytest.raises(CharmConfigInvalidError):
         flask_app.restart_flask()
-    assert database_migration.get_status() == "FAILED"
+    assert database_migration.get_status() == database_migration.FAILED
     harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=0)
     flask_app.restart_flask()
-    assert database_migration.get_status() == "COMPLETED"
+    assert database_migration.get_status() == database_migration.COMPLETED

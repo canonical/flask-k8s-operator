@@ -15,15 +15,25 @@ from exceptions import CharmConfigInvalidError
 logger = logging.getLogger(__name__)
 
 
+DatabaseMigrationStatus = Literal["PENDING", "COMPLETED", "FAILED"]
+
+
 class DatabaseMigration:
     """The DatabaseMigration class that manages database migrations.
 
     Attrs:
         script: the database migration script.
+        COMPLETED: one of the possible database migration status.
+        FAILED: one of the possible database migration status.
+        PENDING: one of the possible database migration status.
     """
 
     _STATUS_FILE = FLASK_STATE_DIR / "database-migration-status"
     _COMPLETED_SCRIPT_FILE = FLASK_STATE_DIR / "completed-database-migration"
+
+    COMPLETED: DatabaseMigrationStatus = "COMPLETED"
+    FAILED: DatabaseMigrationStatus = "FAILED"
+    PENDING: DatabaseMigrationStatus = "PENDING"
 
     def __init__(self, flask_container: ops.Container, database_migration_script: str | None):
         """Initialize the DatabaseMigration instance.
@@ -40,20 +50,20 @@ class DatabaseMigration:
         """Get the database migration script."""
         return self._script
 
-    def get_status(self) -> Literal["PENDING", "COMPLETED", "FAILED"]:
+    def get_status(self) -> DatabaseMigrationStatus:
         """Get the database migration run status.
 
         Returns:
             One of "PENDING", "COMPLETED", or "FAILED".
         """
         return cast(
-            Literal["PENDING", "COMPLETED", "FAILED"],
-            "PENDING"
+            DatabaseMigrationStatus,
+            self.PENDING
             if not self._container.exists(self._STATUS_FILE)
             else self._container.pull(self._STATUS_FILE).read(),
         )
 
-    def set_status(self, status: Literal["PENDING", "COMPLETED", "FAILED"]) -> None:
+    def set_status(self, status: DatabaseMigrationStatus) -> None:
         """Set the database migration run status.
 
         Args:
@@ -90,7 +100,7 @@ class DatabaseMigration:
         Raises:
             CharmConfigInvalidError: if the database migration run failed.
         """
-        if self.get_status() in ("PENDING", "FAILED") and self.script:
+        if self.get_status() in (self.PENDING, self.FAILED) and self.script:
             logger.info("execute database migration script: %s", repr(self.script))
             try:
                 self._container.exec(
@@ -98,10 +108,10 @@ class DatabaseMigration:
                     environment=environment,
                     working_dir="/srv/flask/app",
                 ).wait()
-                self.set_status("COMPLETED")
+                self.set_status(self.COMPLETED)
                 self.set_completed_script(self.script)
             except ExecError as exc:
-                self.set_status("FAILED")
+                self.set_status(self.FAILED)
                 logger.error(
                     "database migration script %s failed, stdout: %s, stderr: %s",
                     repr(self.script),

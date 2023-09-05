@@ -175,7 +175,7 @@ class FlaskCharm(ops.CharmBase):
 
     def _on_update_status(self, _: ops.HookEvent) -> None:
         """Handle the update-status event."""
-        if self._database_migration.get_status() == "FAILED":
+        if self._database_migration.get_status() == self._database_migration.FAILED:
             self._restart_flask()
 
 

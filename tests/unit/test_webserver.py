@@ -15,6 +15,7 @@ from ops.testing import Harness
 
 from charm_state import CharmState
 from constants import FLASK_BASE_DIR, FLASK_CONTAINER_NAME
+from database_migration import DatabaseMigration
 from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
@@ -23,7 +24,7 @@ from webserver import GunicornWebserver
 def database_migration_mock_fixture():
     """Create a mock instance for the DatabaseMigration class."""
     mock = unittest.mock.MagicMock()
-    mock.status = "PENDING"
+    mock.status = DatabaseMigration.PENDING
     mock.script = None
     return mock
 
