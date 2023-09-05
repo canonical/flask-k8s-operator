@@ -50,7 +50,7 @@ class DatabaseMigration:
             Literal["PENDING", "COMPLETED", "FAILED"],
             "PENDING"
             if not self._container.exists(self._STATUS_FILE)
-            else self._container.pull(self._STATUS_FILE),
+            else self._container.pull(self._STATUS_FILE).read(),
         )
 
     def set_status(self, status: Literal["PENDING", "COMPLETED", "FAILED"]) -> None:
@@ -90,7 +90,7 @@ class DatabaseMigration:
         Raises:
             CharmConfigInvalidError: if the database migration run failed.
         """
-        if self.get_status() == "PENDING" and self.script:
+        if self.get_status() in ("PENDING", "FAILED") and self.script:
             logger.info("execute database migration script: %s", repr(self.script))
             try:
                 self._container.exec(
@@ -101,6 +101,7 @@ class DatabaseMigration:
                 self.set_status("COMPLETED")
                 self.set_completed_script(self.script)
             except ExecError as exc:
+                self.set_status("FAILED")
                 logger.error(
                     "database migration script %s failed, stdout: %s, stderr: %s",
                     repr(self.script),

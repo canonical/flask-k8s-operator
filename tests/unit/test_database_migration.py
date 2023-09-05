@@ -65,3 +65,34 @@ def test_database_migration(harness: Harness):
     with pytest.raises(CharmConfigInvalidError):
         flask_app.restart_flask()
     assert database_migration_history == ["database-migration.sh"] * 2
+
+
+def test_database_migration_rerun(harness: Harness):
+    """
+    arrange: none
+    act: fail the first database migration run and rerun database migration.
+    assert: the second database migration run should be successfully.
+    """
+    harness.begin()
+    container: ops.Container = harness.model.unit.get_container(FLASK_CONTAINER_NAME)
+    harness.set_can_connect(FLASK_CONTAINER_NAME, True)
+    charm_state = CharmState(
+        flask_secret_key="abc",
+        is_secret_storage_ready=True,
+    )
+    database_migration = DatabaseMigration(
+        flask_container=container, database_migration_script="database-migration.sh"
+    )
+    webserver = GunicornWebserver(
+        charm_state=charm_state,
+        flask_container=container,
+        database_migration=database_migration,
+    )
+    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=1)
+    with pytest.raises(CharmConfigInvalidError):
+        flask_app.restart_flask()
+    assert database_migration.get_status() == "FAILED"
+    harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=0)
+    flask_app.restart_flask()
+    assert database_migration.get_status() == "COMPLETED"
