@@ -36,6 +36,7 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     webserver = GunicornWebserver(
         charm_state=charm_state,
         flask_container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),
+        database_migration=harness.charm._database_migration,
     )
     flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
     flask_app.restart_flask()

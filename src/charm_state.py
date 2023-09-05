@@ -28,6 +28,7 @@ if typing.TYPE_CHECKING:
     from charm import FlaskCharm
 
 KNOWN_CHARM_CONFIG = (
+    "database_migration_script",
     "flask_application_root",
     "flask_debug",
     "flask_env",
