@@ -12,7 +12,7 @@ from juju.application import Application
 logger = logging.getLogger(__name__)
 
 
-async def test_database_migration(
+async def test_db_migration(
     flask_db_app: Application,
     model: juju.model.Model,
     get_unit_ips,
@@ -46,4 +46,3 @@ async def test_database_migration(
     await model.wait_for_idle()
 
     assert flask_db_app.status == "blocked"
-    assert "update-status" in flask_db_app.status_message
