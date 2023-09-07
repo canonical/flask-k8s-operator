@@ -25,7 +25,7 @@ from flask_app import FlaskApp
         pytest.param({"debug": True}, id="debug"),
     ],
 )
-def test_flask_env(flask_config: dict):
+def test_flask_env(flask_config: dict, database_migration_mock):
     """
     arrange: create the Flask app object with a controlled charm state.
     act: none.
@@ -40,6 +40,7 @@ def test_flask_env(flask_config: dict):
         charm=unittest.mock.MagicMock(),
         charm_state=charm_state,
         webserver=unittest.mock.MagicMock(),
+        database_migration=database_migration_mock,
     )
     env = flask_app._flask_environment()
     assert env["FLASK_SECRET_KEY"] == "foobar"
@@ -78,7 +79,12 @@ HTTP_PROXY_TEST_PARAMS = [
     "set_env, expected",
     HTTP_PROXY_TEST_PARAMS,
 )
-def test_http_proxy(set_env: typing.Dict[str, str], expected: typing.Dict[str, str], monkeypatch):
+def test_http_proxy(
+    set_env: typing.Dict[str, str],
+    expected: typing.Dict[str, str],
+    monkeypatch,
+    database_migration_mock,
+):
     """
     arrange: set juju charm http proxy related environment variables.
     act: generate a flask environment.
@@ -95,6 +101,7 @@ def test_http_proxy(set_env: typing.Dict[str, str], expected: typing.Dict[str, s
         charm=unittest.mock.MagicMock(),
         charm_state=charm_state,
         webserver=unittest.mock.MagicMock(),
+        database_migration=database_migration_mock,
     )
     env = flask_app._flask_environment()
     expected_env: typing.Dict[str, typing.Optional[str]] = {

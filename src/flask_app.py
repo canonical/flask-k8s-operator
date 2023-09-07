@@ -10,6 +10,8 @@ import ops
 
 from charm_state import KNOWN_CHARM_CONFIG, CharmState
 from constants import FLASK_ENV_CONFIG_PREFIX, FLASK_SERVICE_NAME
+from database_migration import DatabaseMigration
+from exceptions import CharmConfigInvalidError
 from webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
@@ -19,7 +21,11 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
     """Flask application manager."""
 
     def __init__(
-        self, charm: ops.CharmBase, charm_state: CharmState, webserver: GunicornWebserver
+        self,
+        charm: ops.CharmBase,
+        charm_state: CharmState,
+        webserver: GunicornWebserver,
+        database_migration: DatabaseMigration,
     ):
         """Construct the FlaskApp instance.
 
@@ -27,10 +33,12 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             charm: The main charm object.
             charm_state: The state of the charm.
             webserver: The webserver manager object.
+            database_migration: The database migration manager object.
         """
         self._charm = charm
         self._charm_state = charm_state
         self._webserver = webserver
+        self._database_migration = database_migration
 
     def _flask_environment(self) -> dict[str, str]:
         """Generate a Flask environment dictionary from the charm Flask configurations.
@@ -90,7 +98,8 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
     def restart_flask(self) -> None:
         """Restart or start the flask service if not started with the latest configuration.
 
-        Raise CharmConfigInvalidError if the configuration is not valid.
+        Raises:
+             CharmConfigInvalidError: if the configuration is not valid.
         """
         container = self._charm.unit.get_container("flask-app")
         if not container.can_connect():
@@ -105,4 +114,15 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             flask_environment=self._flask_environment(),
             is_webserver_running=is_webserver_running,
         )
+        self._database_migration.run(self._flask_environment())
         container.replan()
+        if (
+            self._database_migration.get_completed_script() is not None
+            and self._database_migration.script is not None
+            and self._database_migration.script != self._database_migration.get_completed_script()
+        ):
+            raise CharmConfigInvalidError(
+                f"database migration script {self._database_migration.get_completed_script()!r} "
+                f"has been executed successfully in the current flask container,"
+                f"updating database-migration-script in config has no effect"
+            )

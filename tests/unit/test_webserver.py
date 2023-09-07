@@ -15,19 +15,8 @@ from ops.testing import Harness
 
 from charm_state import CharmState
 from constants import FLASK_BASE_DIR, FLASK_CONTAINER_NAME
-from database_migration import DatabaseMigration
 from flask_app import FlaskApp
 from webserver import GunicornWebserver
-
-
-@pytest.fixture(name="database_migration_mock")
-def database_migration_mock_fixture():
-    """Create a mock instance for the DatabaseMigration class."""
-    mock = unittest.mock.MagicMock()
-    mock.status = DatabaseMigration.PENDING
-    mock.script = None
-    return mock
-
 
 GUNICORN_CONFIG_TEST_PARAMS = [
     pytest.param(
@@ -79,12 +68,13 @@ def test_gunicorn_config(
         is_secret_storage_ready=True,
         **charm_state_params,
     )
-    webserver = GunicornWebserver(
+    webserver = GunicornWebserver(charm_state=charm_state, flask_container=container)
+    flask_app = FlaskApp(
+        charm=harness.charm,
         charm_state=charm_state,
-        flask_container=container,
+        webserver=webserver,
         database_migration=database_migration_mock,
     )
-    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
     flask_app.restart_flask()
     webserver.update_config(
         is_webserver_running=False, flask_environment=flask_app._flask_environment()
@@ -108,9 +98,13 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running, database_mi
     webserver = GunicornWebserver(
         charm_state=charm_state,
         flask_container=container,
+    )
+    flask_app = FlaskApp(
+        charm=harness.charm,
+        charm_state=charm_state,
+        webserver=webserver,
         database_migration=database_migration_mock,
     )
-    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
     flask_app.restart_flask()
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)

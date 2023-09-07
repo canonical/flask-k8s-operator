@@ -13,7 +13,6 @@ from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
 from constants import FLASK_SERVICE_NAME
-from database_migration import DatabaseMigration
 from exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
@@ -31,18 +30,15 @@ class GunicornWebserver:
         self,
         charm_state: CharmState,
         flask_container: ops.Container,
-        database_migration: DatabaseMigration,
     ):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:
             charm_state: The state of the charm that the GunicornWebserver instance belongs to.
             flask_container: The Flask container in this charm unit.
-            database_migration: The database migration manager object.
         """
         self._charm_state = charm_state
         self._flask_container = flask_container
-        self._database_migration = database_migration
 
     @property
     def _config(self) -> str:
@@ -149,11 +145,9 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
                 "Webserver configuration check failed, "
                 "please review your charm configuration or database relation"
             ) from exc
-        self._database_migration.run(flask_environment)
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
             self._flask_container.send_signal(self._reload_signal, FLASK_SERVICE_NAME)
-        self._database_migration.check_completed()
 
     def _prepare_flask_log_dir(self) -> None:
         """Prepare Flask access and error log directory for the Flask application."""

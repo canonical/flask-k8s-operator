@@ -9,6 +9,7 @@ from typing import Literal, cast
 import ops
 from ops.pebble import ExecError
 
+from charm_state import CharmState
 from constants import FLASK_STATE_DIR
 from exceptions import CharmConfigInvalidError
 
@@ -35,20 +36,20 @@ class DatabaseMigration:
     FAILED: DatabaseMigrationStatus = "FAILED"
     PENDING: DatabaseMigrationStatus = "PENDING"
 
-    def __init__(self, flask_container: ops.Container, database_migration_script: str | None):
+    def __init__(self, flask_container: ops.Container, charm_state: CharmState):
         """Initialize the DatabaseMigration instance.
 
         Args:
             flask_container: The flask container object.
-            database_migration_script: The database_migration_script configuration.
+            charm_state: The charm state.
         """
         self._container = flask_container
-        self._script = database_migration_script
+        self._charm_state = charm_state
 
     @property
     def script(self) -> str | None:
         """Get the database migration script."""
-        return self._script
+        return self._charm_state.database_migration_script
 
     def get_status(self) -> DatabaseMigrationStatus:
         """Get the database migration run status.
@@ -122,21 +123,3 @@ class DatabaseMigration:
                     f"database migration script {self.script!r} failed, "
                     "will retry in next update-status"
                 ) from exc
-
-    def check_completed(self) -> None:
-        """Check if the database_migration_script config is conflicted with the completed one.
-
-        Raises:
-            CharmConfigInvalidError: if the database_migration_script config is conflicted
-                with the completed one.
-        """
-        if (
-            self.get_completed_script() is not None
-            and self.script is not None
-            and self.script != self.get_completed_script()
-        ):
-            raise CharmConfigInvalidError(
-                f"database migration script {self.get_completed_script()!r} "
-                f"has been executed successfully in the current flask container,"
-                f"updating database-migration-script in config has no effect"
-            )

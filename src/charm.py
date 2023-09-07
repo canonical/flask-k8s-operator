@@ -36,10 +36,7 @@ class FlaskCharm(ops.CharmBase):
         super().__init__(*args)
         self._secret_storage = SecretStorage(charm=self)
         database_requirers = make_database_requirers(self)
-        self._database_migration = DatabaseMigration(
-            flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
-            database_migration_script=self.config.get("database_migration_script"),
-        )
+
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
@@ -49,12 +46,21 @@ class FlaskCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             return
+
+        self._database_migration = DatabaseMigration(
+            flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
+            charm_state=self._charm_state,
+        )
         webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
+        )
+        self._flask_app = FlaskApp(
+            charm=self,
+            charm_state=self._charm_state,
+            webserver=webserver,
             database_migration=self._database_migration,
         )
-        self._flask_app = FlaskApp(charm=self, charm_state=self._charm_state, webserver=webserver)
         self._databases = Databases(
             charm=self,
             flask_app=self._flask_app,

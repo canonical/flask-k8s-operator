@@ -29,23 +29,26 @@ def test_database_migration(harness: Harness):
     charm_state = CharmState(
         flask_secret_key="abc",
         is_secret_storage_ready=True,
-    )
-    database_migration = DatabaseMigration(
-        flask_container=container, database_migration_script="database-migration.sh"
+        database_migration_script="/srv/flask/app/database-migration.sh",
     )
     webserver = GunicornWebserver(
         charm_state=charm_state,
         flask_container=container,
+    )
+    database_migration = DatabaseMigration(flask_container=container, charm_state=charm_state)
+    flask_app = FlaskApp(
+        charm=harness.charm,
+        charm_state=charm_state,
+        webserver=webserver,
         database_migration=database_migration,
     )
-    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
     database_migration_history = []
 
     def handle_database_migration(args: ops.testing.ExecArgs):
         """Handle the database migration command."""
         script = args.command[-1]
         database_migration_history.append(script)
-        if (root / "srv/flask/app" / script).exists():
+        if (root / script.removeprefix("/")).exists():
             return ops.testing.ExecResult(0)
         return ops.testing.ExecResult(1)
 
@@ -54,17 +57,22 @@ def test_database_migration(harness: Harness):
     )
     with pytest.raises(CharmConfigInvalidError):
         flask_app.restart_flask()
-    assert database_migration_history == ["database-migration.sh"]
+    assert database_migration_history == ["/srv/flask/app/database-migration.sh"]
 
-    (root / "srv/flask/app" / "database-migration.sh").touch()
+    (root / "srv/flask/app/database-migration.sh").touch()
     flask_app.restart_flask()
-    assert database_migration_history == ["database-migration.sh"] * 2
+    assert database_migration_history == ["/srv/flask/app/database-migration.sh"] * 2
 
-    database_migration._script = "database-migration-2.sh"  # pylint: disable=protected-access
-    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    charm_state.database_migration_script = "database-migration-2.sh"
+    flask_app = FlaskApp(
+        charm=harness.charm,
+        charm_state=charm_state,
+        webserver=webserver,
+        database_migration=database_migration,
+    )
     with pytest.raises(CharmConfigInvalidError):
         flask_app.restart_flask()
-    assert database_migration_history == ["database-migration.sh"] * 2
+    assert database_migration_history == ["/srv/flask/app/database-migration.sh"] * 2
 
 
 def test_database_migration_rerun(harness: Harness):
@@ -79,16 +87,19 @@ def test_database_migration_rerun(harness: Harness):
     charm_state = CharmState(
         flask_secret_key="abc",
         is_secret_storage_ready=True,
-    )
-    database_migration = DatabaseMigration(
-        flask_container=container, database_migration_script="database-migration.sh"
+        database_migration_script="/srv/flask/app/database-migration.sh",
     )
     webserver = GunicornWebserver(
         charm_state=charm_state,
         flask_container=container,
-        database_migration=database_migration,
     )
-    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    database_migration = DatabaseMigration(flask_container=container, charm_state=charm_state)
+    flask_app = FlaskApp(
+        charm=harness.charm,
+        charm_state=charm_state,
+        database_migration=database_migration,
+        webserver=webserver,
+    )
     harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=1)
     with pytest.raises(CharmConfigInvalidError):
         flask_app.restart_flask()
@@ -96,3 +107,25 @@ def test_database_migration_rerun(harness: Harness):
     harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=0)
     flask_app.restart_flask()
     assert database_migration.get_status() == database_migration.COMPLETED
+
+
+def test_database_migration_status(harness: Harness):
+    """
+    arrange: set up the test harness
+    act: run the database migration with migration run sets to fail or succeed
+    assert: database migration instance should report correct status.
+    """
+    harness.begin()
+    container = harness.charm.unit.get_container(FLASK_CONTAINER_NAME)
+    harness.handle_exec(FLASK_CONTAINER_NAME, [], result=1)
+    script = "/srv/flask/app/test"
+    charm_state = CharmState(database_migration_script=script, is_secret_storage_ready=True)
+    database_migration = DatabaseMigration(flask_container=container, charm_state=charm_state)
+    assert database_migration.get_status() == database_migration.PENDING
+    with pytest.raises(CharmConfigInvalidError):
+        database_migration.run({})
+    assert database_migration.get_status() == database_migration.FAILED
+    harness.handle_exec(FLASK_CONTAINER_NAME, [], result=0)
+    database_migration.run({})
+    assert database_migration.get_status() == database_migration.COMPLETED
+    assert database_migration.get_completed_script() == script
