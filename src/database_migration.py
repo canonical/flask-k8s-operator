@@ -64,7 +64,7 @@ class DatabaseMigration:
             else self._container.pull(self._STATUS_FILE).read(),
         )
 
-    def set_status(self, status: DatabaseMigrationStatus) -> None:
+    def _set_status(self, status: DatabaseMigrationStatus) -> None:
         """Set the database migration run status.
 
         Args:
@@ -83,7 +83,7 @@ class DatabaseMigration:
             return cast(str, self._container.pull(self._COMPLETED_SCRIPT_FILE).read())
         return None
 
-    def set_completed_script(self, script_path: str) -> None:
+    def _set_completed_script(self, script_path: str) -> None:
         """Set the database migration script that has completed in the current container.
 
         Args:
@@ -109,10 +109,10 @@ class DatabaseMigration:
                     environment=environment,
                     working_dir="/srv/flask/app",
                 ).wait()
-                self.set_status(self.COMPLETED)
-                self.set_completed_script(self.script)
+                self._set_status(self.COMPLETED)
+                self._set_completed_script(self.script)
             except ExecError as exc:
-                self.set_status(self.FAILED)
+                self._set_status(self.FAILED)
                 logger.error(
                     "database migration script %s failed, stdout: %s, stderr: %s",
                     repr(self.script),
