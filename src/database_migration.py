@@ -16,7 +16,7 @@ from exceptions import CharmConfigInvalidError
 logger = logging.getLogger(__name__)
 
 
-class DatabaseMigrationStatus(enum.StrEnum):
+class DatabaseMigrationStatus(str, enum.Enum):
     """Database migration status.
 
     Attrs:
