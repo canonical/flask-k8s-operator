@@ -4,7 +4,7 @@
 import os
 
 from flask import Flask, request
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, inspect, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from werkzeug.security import generate_password_hash
@@ -41,3 +41,11 @@ def create_user():
     session.add(new_user)
     session.commit()
     return "", 201
+
+
+@app.route("/tables/<table>", methods=["HEAD"])
+def test_table(table: str):
+    if inspect(engine).has_table(table):
+        return "", 200
+    else:
+        return "", 404

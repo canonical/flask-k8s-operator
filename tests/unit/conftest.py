@@ -14,7 +14,7 @@ from ops.testing import Harness
 
 from charm import FlaskCharm
 from constants import FLASK_CONTAINER_NAME
-from database_migration import DatabaseMigration
+from database_migration import DatabaseMigrationStatus
 
 
 @pytest.fixture(name="harness")
@@ -55,6 +55,6 @@ def harness_fixture() -> typing.Generator[Harness, None, None]:
 def database_migration_mock():
     """Create a mock instance for the DatabaseMigration class."""
     mock = unittest.mock.MagicMock()
-    mock.status = DatabaseMigration.PENDING
+    mock.status = DatabaseMigrationStatus.PENDING
     mock.script = None
     return mock

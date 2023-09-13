@@ -9,7 +9,7 @@ from ops.testing import Harness
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
-from database_migration import DatabaseMigration
+from database_migration import DatabaseMigration, DatabaseMigrationStatus
 from exceptions import CharmConfigInvalidError
 from flask_app import FlaskApp
 from webserver import GunicornWebserver
@@ -103,10 +103,10 @@ def test_database_migration_rerun(harness: Harness):
     harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=1)
     with pytest.raises(CharmConfigInvalidError):
         flask_app.restart_flask()
-    assert database_migration.get_status() == database_migration.FAILED
+    assert database_migration.get_status() == DatabaseMigrationStatus.FAILED
     harness.handle_exec(FLASK_CONTAINER_NAME, ["/bin/bash", "-xeo", "pipefail"], result=0)
     flask_app.restart_flask()
-    assert database_migration.get_status() == database_migration.COMPLETED
+    assert database_migration.get_status() == DatabaseMigrationStatus.COMPLETED
 
 
 def test_database_migration_status(harness: Harness):
@@ -121,11 +121,11 @@ def test_database_migration_status(harness: Harness):
     script = "/srv/flask/app/test"
     charm_state = CharmState(database_migration_script=script, is_secret_storage_ready=True)
     database_migration = DatabaseMigration(flask_container=container, charm_state=charm_state)
-    assert database_migration.get_status() == database_migration.PENDING
+    assert database_migration.get_status() == DatabaseMigrationStatus.PENDING
     with pytest.raises(CharmConfigInvalidError):
         database_migration.run({})
-    assert database_migration.get_status() == database_migration.FAILED
+    assert database_migration.get_status() == DatabaseMigrationStatus.FAILED
     harness.handle_exec(FLASK_CONTAINER_NAME, [], result=0)
     database_migration.run({})
-    assert database_migration.get_status() == database_migration.COMPLETED
+    assert database_migration.get_status() == DatabaseMigrationStatus.COMPLETED
     assert database_migration.get_completed_script() == script

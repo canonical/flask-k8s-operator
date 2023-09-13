@@ -23,7 +23,6 @@ async def test_db_migration(
     assert: requesting the charm should return a correct response indicate
         the database migration script has been executed and only executed once.
     """
-    await flask_db_app.set_config({"database_migration_script": "database-migration.sh"})
     db_app = await model.deploy("postgresql-k8s", channel="14/stable", trust=True)
     await model.wait_for_idle()
 
@@ -32,6 +31,13 @@ async def test_db_migration(
     await model.wait_for_idle(status="active")
 
     for unit_ip in await get_unit_ips(flask_db_app.name):
+        assert requests.post(f"http://{unit_ip}:8000/tables/users", timeout=5).status_code == 404
+
+    await flask_db_app.set_config({"database_migration_script": "database-migration.sh"})
+    await model.wait_for_idle(status="active")
+
+    for unit_ip in await get_unit_ips(flask_db_app.name):
+        assert requests.post(f"http://{unit_ip}:8000/tables/users", timeout=5).status_code == 200
         user_creation_request = {"username": "foo", "password": "bar"}
         response = requests.post(
             f"http://{unit_ip}:8000/users", json=user_creation_request, timeout=5
