@@ -31,13 +31,13 @@ async def test_db_migration(
     await model.wait_for_idle(status="active")
 
     for unit_ip in await get_unit_ips(flask_db_app.name):
-        assert requests.post(f"http://{unit_ip}:8000/tables/users", timeout=5).status_code == 404
+        assert requests.head(f"http://{unit_ip}:8000/tables/users", timeout=5).status_code == 404
 
     await flask_db_app.set_config({"database_migration_script": "database-migration.sh"})
     await model.wait_for_idle(status="active")
 
     for unit_ip in await get_unit_ips(flask_db_app.name):
-        assert requests.post(f"http://{unit_ip}:8000/tables/users", timeout=5).status_code == 200
+        assert requests.head(f"http://{unit_ip}:8000/tables/users", timeout=5).status_code == 200
         user_creation_request = {"username": "foo", "password": "bar"}
         response = requests.post(
             f"http://{unit_ip}:8000/users", json=user_creation_request, timeout=5

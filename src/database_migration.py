@@ -10,7 +10,7 @@ import ops
 from ops.pebble import ExecError
 
 from charm_state import CharmState
-from constants import FLASK_STATE_DIR, FLASK_APP_DIR
+from constants import FLASK_APP_DIR, FLASK_STATE_DIR
 from exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
@@ -111,7 +111,7 @@ class DatabaseMigration:
                 self._container.exec(
                     ["/bin/bash", "-xeo", "pipefail", self.script],
                     environment=environment,
-                    working_dir=FLASK_APP_DIR,
+                    working_dir=str(FLASK_APP_DIR),
                 ).wait()
                 self._set_status(DatabaseMigrationStatus.COMPLETED)
                 self._set_completed_script(self.script)
