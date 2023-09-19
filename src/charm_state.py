@@ -224,7 +224,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             database_migration_script = os.path.normpath(FLASK_APP_DIR / database_migration_script)
             if not database_migration_script.startswith(str(FLASK_APP_DIR)):
                 raise CharmConfigInvalidError(
-                    "database_migration_script is not inside /srv/flask/app"
+                    f"database_migration_script is not inside {FLASK_APP_DIR}"
                 )
         return cls(
             flask_config=valid_flask_config.dict(exclude_unset=True, exclude_none=True),
