@@ -102,7 +102,10 @@ class DatabaseMigration:
         Raises:
             CharmConfigInvalidError: if the database migration run failed.
         """
-        if self.get_status() not in (DatabaseMigrationStatus.PENDING, DatabaseMigrationStatus.FAILED):
+        if self.get_status() not in (
+            DatabaseMigrationStatus.PENDING,
+            DatabaseMigrationStatus.FAILED,
+        ):
             return
         if not self.script:
             return
