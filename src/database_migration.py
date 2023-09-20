@@ -20,9 +20,9 @@ class DatabaseMigrationStatus(str, enum.Enum):
     """Database migration status.
 
     Attrs:
-        COMPLETED: one of the possible database migration status.
-        FAILED: one of the possible database migration status.
-        PENDING: one of the possible database migration status.
+        COMPLETED: A status denoting a successful database migration.
+        FAILED: A status denoting an unsuccessful database migration.
+        PENDING: A status denoting a pending database migration.
     """
 
     COMPLETED = "COMPLETED"
@@ -102,28 +102,28 @@ class DatabaseMigration:
         Raises:
             CharmConfigInvalidError: if the database migration run failed.
         """
-        if (
-            self.get_status() in (DatabaseMigrationStatus.PENDING, DatabaseMigrationStatus.FAILED)
-            and self.script
-        ):
-            logger.info("execute database migration script: %s", repr(self.script))
-            try:
-                self._container.exec(
-                    ["/bin/bash", "-xeo", "pipefail", self.script],
-                    environment=environment,
-                    working_dir=str(FLASK_APP_DIR),
-                ).wait()
-                self._set_status(DatabaseMigrationStatus.COMPLETED)
-                self._set_completed_script(self.script)
-            except ExecError as exc:
-                self._set_status(DatabaseMigrationStatus.FAILED)
-                logger.error(
-                    "database migration script %s failed, stdout: %s, stderr: %s",
-                    repr(self.script),
-                    exc.stdout,
-                    exc.stderr,
-                )
-                raise CharmConfigInvalidError(
-                    f"database migration script {self.script!r} failed, "
-                    "will retry in next update-status"
-                ) from exc
+        if self.get_status() not in (DatabaseMigrationStatus.PENDING, DatabaseMigrationStatus.FAILED):
+            return
+        if not self.script:
+            return
+        logger.info("execute database migration script: %s", repr(self.script))
+        try:
+            self._container.exec(
+                ["/bin/bash", "-xeo", "pipefail", self.script],
+                environment=environment,
+                working_dir=str(FLASK_APP_DIR),
+            ).wait()
+            self._set_status(DatabaseMigrationStatus.COMPLETED)
+            self._set_completed_script(self.script)
+        except ExecError as exc:
+            self._set_status(DatabaseMigrationStatus.FAILED)
+            logger.error(
+                "database migration script %s failed, stdout: %s, stderr: %s",
+                repr(self.script),
+                exc.stdout,
+                exc.stderr,
+            )
+            raise CharmConfigInvalidError(
+                f"database migration script {self.script!r} failed, "
+                "will retry in next update-status"
+            ) from exc

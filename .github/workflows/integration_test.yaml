@@ -9,3 +9,4 @@ jobs:
     secrets: inherit
     with:
       modules: '["test_charm", "test_proxy", "test_cos", "test_database", "test_db_migration", "test_default", "test_wsgi_path"]'
+      juju-channel: 3.2/stable
