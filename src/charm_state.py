@@ -21,6 +21,7 @@ from pydantic import (  # pylint: disable=no-name-in-module
 )
 
 from charm_types import WebserverConfig
+from constants import FLASK_APP_DIR
 from exceptions import CharmConfigInvalidError
 from secret_storage import SecretStorage
 
@@ -28,6 +29,7 @@ if typing.TYPE_CHECKING:
     from charm import FlaskCharm
 
 KNOWN_CHARM_CONFIG = (
+    "database_migration_script",
     "flask_application_root",
     "flask_debug",
     "flask_env",
@@ -105,6 +107,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         flask_config: the value of the flask_config charm configuration.
         app_config: user-defined configurations for the Flask application.
         base_dir: the base directory of the Flask application.
+        database_migration_script: The database migration script path.
         database_uris: a mapping of available database environment variable to database uris.
         flask_dir: the path to the Flask directory.
         flask_wsgi_app_path: the path to the Flask directory.
@@ -121,6 +124,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         self,
         *,
         app_config: dict[str, int | str | bool] | None = None,
+        database_migration_script: str | None = None,
         database_uris: dict[str, str] | None = None,
         flask_config: dict[str, int | str] | None = None,
         flask_secret_key: str | None = None,
@@ -137,6 +141,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             app_config: User-defined configuration values for the Flask configuration.
             flask_config: The value of the flask_config charm configuration.
             flask_secret_key: The secret storage manager associated with the charm.
+            database_migration_script: The database migration script path
             database_uris: The database uri environment variables.
             is_secret_storage_ready: whether the secret storage system is ready.
             webserver_workers: The number of workers to use for the web server,
@@ -161,6 +166,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         self._is_secret_storage_ready = is_secret_storage_ready
         self._flask_secret_key = flask_secret_key
         self.database_uris = database_uris if database_uris is not None else {}
+        self.database_migration_script = database_migration_script
 
     @property
     def proxy(self) -> "ProxyConfig":
@@ -213,9 +219,17 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             )
             error_field_str = " ".join(f"flask_{f}" for f in error_fields)
             raise CharmConfigInvalidError(f"invalid configuration: {error_field_str}") from exc
+        database_migration_script = charm.config.get("database_migration_script")
+        if database_migration_script:
+            database_migration_script = os.path.normpath(FLASK_APP_DIR / database_migration_script)
+            if not database_migration_script.startswith(str(FLASK_APP_DIR)):
+                raise CharmConfigInvalidError(
+                    f"database_migration_script is not inside {FLASK_APP_DIR}"
+                )
         return cls(
             flask_config=valid_flask_config.dict(exclude_unset=True, exclude_none=True),
             app_config=typing.cast(dict[str, str | int | bool], app_config),
+            database_migration_script=database_migration_script,
             database_uris=database_uris,
             webserver_workers=int(workers) if workers is not None else None,
             webserver_threads=int(threads) if threads is not None else None,

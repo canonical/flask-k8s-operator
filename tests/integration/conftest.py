@@ -36,6 +36,15 @@ def fixture_test_flask_image(pytestconfig: Config):
     return test_flask_image
 
 
+@pytest.fixture(scope="module", name="test_db_flask_image")
+def fixture_test_db_flask_image(pytestconfig: Config):
+    """Return the --test-flask-image test parameter."""
+    test_flask_image = pytestconfig.getoption("--test-db-flask-image")
+    if not test_flask_image:
+        raise ValueError("the following arguments are required: --test-db-flask-image")
+    return test_flask_image
+
+
 @pytest_asyncio.fixture(scope="module", name="model")
 async def fixture_model(ops_test: OpsTest) -> Model:
     """Return the current testing juju model."""
@@ -133,6 +142,22 @@ async def flask_app_fixture(build_charm: str, model: Model, test_flask_image: st
         build_charm, resources=resources, application_name=app_name, series="jammy"
     )
     await model.wait_for_idle(raise_on_blocked=True)
+    return app
+
+
+@pytest_asyncio.fixture(scope="module", name="flask_db_app")
+async def flask_db_app_fixture(build_charm: str, model: Model, test_db_flask_image: str):
+    """Build and deploy the flask charm with test-db-flask image."""
+    app_name = "flask-k8s"
+
+    resources = {
+        "flask-app-image": test_db_flask_image,
+        "statsd-prometheus-exporter-image": "prom/statsd-exporter",
+    }
+    app = await model.deploy(
+        build_charm, resources=resources, application_name=app_name, series="jammy"
+    )
+    await model.wait_for_idle()
     return app
 
 
