@@ -10,6 +10,7 @@ import ops
 import pytest
 import requests
 from juju.application import Application
+from pytest_operator.plugin import OpsTest
 
 # caused by pytest fixtures
 # pylint: disable=too-many-arguments
@@ -18,19 +19,21 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "endpoint,db_name, db_channel, trust",
+    "endpoint,db_name, db_channel, revision, trust",
     [
-        ("mysql/status", "mysql-k8s", "8.0/stable", True),
-        ("postgresql/status", "postgresql-k8s", "14/stable", True),
+        ("mysql/status", "mysql-k8s", "8.0/stable", "75", True),
+        ("postgresql/status", "postgresql-k8s", "14/stable", None, True),
     ],
 )
 async def test_with_database(
+    ops_test: OpsTest,
     flask_app: Application,
     model: juju.model.Model,
     get_unit_ips,
     endpoint: str,
     db_name: str,
     db_channel: str,
+    revision: str | None,
     trust: bool,
 ):
     """
@@ -38,11 +41,16 @@ async def test_with_database(
     act: deploy the database and relate it to the charm.
     assert: requesting the charm should return a correct response
     """
-    db_app = await model.deploy(db_name, channel=db_channel, trust=trust)
+    deploy_cmd = ["deploy", db_name, "--channel", db_channel]
+    if revision:
+        deploy_cmd.extend(["--revision", revision])
+    if trust:
+        deploy_cmd.extend(["--trust"])
+    await ops_test.juju(*deploy_cmd)
     # mypy doesn't see that ActiveStatus has a name
     await model.wait_for_idle(status=ops.ActiveStatus.name)  # type: ignore
 
-    await model.add_relation(flask_app.name, db_app.name)
+    await model.add_relation(flask_app.name, db_name)
 
     # mypy doesn't see that ActiveStatus has a name
     await model.wait_for_idle(status=ops.ActiveStatus.name)  # type: ignore

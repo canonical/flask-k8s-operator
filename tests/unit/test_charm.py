@@ -37,7 +37,12 @@ def test_flask_pebble_layer(harness: Harness) -> None:
         charm_state=charm_state,
         flask_container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),
     )
-    flask_app = FlaskApp(charm=harness.charm, charm_state=charm_state, webserver=webserver)
+    flask_app = FlaskApp(
+        charm=harness.charm,
+        charm_state=charm_state,
+        webserver=webserver,
+        database_migration=harness.charm._database_migration,
+    )
     flask_app.restart_flask()
     flask_layer = harness.get_container_pebble_plan("flask-app").to_dict()["services"]["flask-app"]
     assert flask_layer == {
