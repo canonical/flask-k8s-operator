@@ -1,6 +1,18 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 options:
+  database_migration_script:
+    type: string
+    description: >-
+      Specifies the relative path from /srv/flask/app that points to a shell script
+      executing database migrations for the Flask application. This script is
+      designed to run once for each Flask container unit. However, users must ensure:
+      1. The script can be executed multiple times without issues;
+      2. Concurrent migrations from different units are safe.
+      In case of migration failure, the charm will re-attempt during the 
+      update-status event. Successful database migration in a container ensures that
+      any configuration updates won't trigger another migration unless 
+      the Flask container is upgraded or restarted.
   flask_application_root:
     type: string
     description: >-

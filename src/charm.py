@@ -9,12 +9,12 @@ import typing
 
 import ops
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
-from ops.main import main
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
+from database_migration import DatabaseMigration, DatabaseMigrationStatus
 from databases import Databases, get_uris, make_database_requirers
-from exceptions import CharmConfigInvalidError, PebbleNotReadyError
+from exceptions import CharmConfigInvalidError
 from flask_app import FlaskApp
 from observability import Observability
 from secret_storage import SecretStorage
@@ -35,6 +35,7 @@ class FlaskCharm(ops.CharmBase):
         super().__init__(*args)
         self._secret_storage = SecretStorage(charm=self)
         database_requirers = make_database_requirers(self)
+
         try:
             self._charm_state = CharmState.from_charm(
                 charm=self,
@@ -44,12 +45,20 @@ class FlaskCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
             return
-        self._webserver = GunicornWebserver(
+
+        self._database_migration = DatabaseMigration(
+            flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
+            charm_state=self._charm_state,
+        )
+        webserver = GunicornWebserver(
             charm_state=self._charm_state,
             flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
         self._flask_app = FlaskApp(
-            charm=self, charm_state=self._charm_state, webserver=self._webserver
+            charm=self,
+            charm_state=self._charm_state,
+            webserver=webserver,
+            database_migration=self._database_migration,
         )
         self._databases = Databases(
             charm=self,
@@ -72,22 +81,6 @@ class FlaskCharm(ops.CharmBase):
         self.framework.observe(
             self.on.secret_storage_relation_changed, self._on_secret_storage_relation_changed
         )
-
-    def container(self) -> ops.Container:
-        """Get the flask application workload container controller.
-
-        Return:
-            The controller of the flask application workload container.
-
-        Raises:
-            PebbleNotReadyError: if the pebble service inside the container is not ready while the
-                ``require_connected`` is set to True.
-        """
-        if not self.unit.get_container(FLASK_CONTAINER_NAME).can_connect():
-            raise PebbleNotReadyError("pebble inside flask-app container is not ready")
-
-        container = self.unit.get_container(FLASK_CONTAINER_NAME)
-        return container
 
     def _on_config_changed(self, _event: ops.EventBase) -> None:
         """Configure the flask pebble service layer.
@@ -139,6 +132,11 @@ class FlaskCharm(ops.CharmBase):
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))
 
+    def _on_update_status(self, _: ops.HookEvent) -> None:
+        """Handle the update-status event."""
+        if self._database_migration.get_status() == DatabaseMigrationStatus.FAILED:
+            self._restart_flask()
+
 
 if __name__ == "__main__":  # pragma: nocover
-    main(FlaskCharm)
+    ops.main.main(FlaskCharm)

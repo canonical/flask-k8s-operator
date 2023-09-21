@@ -26,7 +26,11 @@ class GunicornWebserver:
 
     """
 
-    def __init__(self, charm_state: CharmState, flask_container: ops.Container):
+    def __init__(
+        self,
+        charm_state: CharmState,
+        flask_container: ops.Container,
+    ):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:
