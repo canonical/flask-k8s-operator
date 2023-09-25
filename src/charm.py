@@ -77,10 +77,6 @@ class FlaskCharm(ops.CharmBase):
         self._observability = Observability(charm=self, charm_state=self._charm_state)
 
         self.framework.observe(self.on.config_changed, self._on_config_changed)
-        self.framework.observe(
-            self.on.statsd_prometheus_exporter_pebble_ready,
-            self._on_statsd_prometheus_exporter_pebble_ready,
-        )
         self.framework.observe(self.on.rotate_secret_key_action, self._on_rotate_secret_key_action)
         self.framework.observe(
             self.on.secret_storage_relation_changed, self._on_secret_storage_relation_changed
@@ -93,32 +89,6 @@ class FlaskCharm(ops.CharmBase):
             _event: the config-changed event that triggers this callback function.
         """
         self._restart_flask()
-
-    def _on_statsd_prometheus_exporter_pebble_ready(self, _event: ops.PebbleReadyEvent) -> None:
-        """Handle the statsd-prometheus-exporter-pebble-ready event."""
-        statsd_container = self.unit.get_container("statsd-prometheus-exporter")
-        statsd_layer = ops.pebble.LayerDict(
-            summary="statsd exporter layer",
-            description="statsd exporter layer",
-            services={
-                "statsd-prometheus-exporter": {
-                    "override": "replace",
-                    "summary": "statsd exporter service",
-                    "user": "nobody",
-                    "command": "/bin/statsd_exporter",
-                    "startup": "enabled",
-                }
-            },
-            checks={
-                "container-ready": {
-                    "override": "replace",
-                    "level": "ready",
-                    "http": {"url": "http://localhost:9102/metrics"},
-                },
-            },
-        )
-        statsd_container.add_layer("statsd-prometheus-exporter", statsd_layer, combine=True)
-        statsd_container.replan()
 
     def _on_rotate_secret_key_action(self, event: ops.ActionEvent) -> None:
         """Handle the rotate-secret-key action.
