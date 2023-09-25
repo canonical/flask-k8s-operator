@@ -106,11 +106,8 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         webserver_config: the web server configuration file content for the charm.
         flask_config: the value of the flask_config charm configuration.
         app_config: user-defined configurations for the Flask application.
-        base_dir: the base directory of the Flask application.
         database_migration_script: The database migration script path.
         database_uris: a mapping of available database environment variable to database uris.
-        flask_dir: the path to the Flask directory.
-        flask_wsgi_app_path: the path to the Flask directory.
         flask_port: the port number to use for the Flask server.
         flask_access_log: the file path for the Flask access log.
         flask_error_log: the file path for the Flask error log.
@@ -133,7 +130,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         webserver_threads: int | None = None,
         webserver_keepalive: int | None = None,
         webserver_timeout: int | None = None,
-        webserver_wsgi_path: str | None = None,
     ):
         """Initialize a new instance of the CharmState class.
 
@@ -152,15 +148,11 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
                 or None if not specified.
             webserver_timeout: The request silence timeout for the web server,
                 or None if not specified.
-            webserver_wsgi_path: The WSGI application path, or None if not specified.
         """
         self._webserver_workers = webserver_workers
         self._webserver_threads = webserver_threads
         self._webserver_keepalive = webserver_keepalive
         self._webserver_timeout = webserver_timeout
-        self._webserver_wsgi_path = (
-            webserver_wsgi_path if webserver_wsgi_path is not None else "app:app"
-        )
         self._flask_config = flask_config if flask_config is not None else {}
         self._app_config = app_config if app_config is not None else {}
         self._is_secret_storage_ready = is_secret_storage_ready
@@ -235,7 +227,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             webserver_threads=int(threads) if threads is not None else None,
             webserver_keepalive=int(keepalive) if keepalive is not None else None,
             webserver_timeout=int(timeout) if timeout is not None else None,
-            webserver_wsgi_path=charm.config.get("webserver_wsgi_path"),
             flask_secret_key=secret_storage.get_flask_secret_key()
             if secret_storage.is_initialized
             else None,
@@ -277,35 +268,6 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
             The value of user-defined Flask application configurations.
         """
         return self._app_config.copy()
-
-    @property
-    def base_dir(self) -> pathlib.Path:
-        """Get the base directory of the Flask application.
-
-        Returns:
-            The base directory of the Flask application.
-        """
-        return pathlib.Path("/srv/flask")
-
-    @property
-    def flask_dir(self) -> pathlib.Path:
-        """Gets the path to the Flask directory.
-
-        Returns:
-            The path to the Flask directory.
-        """
-        return self.base_dir / "app"
-
-    @property
-    def flask_wsgi_app_path(self) -> str:
-        """Gets the Flask WSGI application in pattern $(MODULE_NAME):$(VARIABLE_NAME).
-
-        The MODULE_NAME should be relative to the flask directory.
-
-        Returns:
-            The path to the Flask WSGI application.
-        """
-        return self._webserver_wsgi_path
 
     @property
     def flask_port(self) -> int:

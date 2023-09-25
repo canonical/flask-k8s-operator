@@ -23,6 +23,6 @@ parts:
     plugin: dump
     source: .
     organize:
-      "*": srv/flask/app/
+      "*": flask/app/
     prime:
-      - srv/flask/app
+      - flask/app

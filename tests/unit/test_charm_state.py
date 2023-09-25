@@ -81,26 +81,3 @@ def test_charm_state_invalid_flask_config(charm_config: dict) -> None:
         )
     for config_key in charm_config:
         assert config_key in exc.value.msg
-
-
-@pytest.mark.parametrize(
-    "charm_config, wsgi_path",
-    [
-        pytest.param({}, "app:app", id="default"),
-        pytest.param({"webserver_wsgi_path": "foo.bar:app2"}, "foo.bar:app2", id="non-default"),
-    ],
-)
-def test_charm_state_wsgi_path(charm_config: dict, wsgi_path: str) -> None:
-    """
-    arrange: none.
-    act: set the wsgi_path charm configuration to different values
-    assert: the CharmState should reflect those changes
-    """
-    config = copy.copy(DEFAULT_CHARM_CONFIG)
-    config.update(charm_config)
-    charm_state = CharmState.from_charm(
-        secret_storage=SECRET_STORAGE_MOCK,
-        charm=unittest.mock.MagicMock(config=config),
-        database_uris={},
-    )
-    assert charm_state.flask_wsgi_app_path == wsgi_path

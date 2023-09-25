@@ -12,7 +12,7 @@ import ops
 from ops.pebble import ExecError, PathError
 
 from charm_state import CharmState
-from constants import FLASK_SERVICE_NAME
+from constants import FLASK_APP_DIR, FLASK_BASE_DIR, FLASK_SERVICE_NAME
 from exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class GunicornWebserver:
         new_line = "\n"
         config = f"""\
 bind = ['0.0.0.0:{self._charm_state.flask_port}']
-chdir = {repr(str(self._charm_state.flask_dir.absolute()))}
+chdir = {repr(str(FLASK_APP_DIR))}
 accesslog = {repr(str(self._charm_state.flask_access_log.absolute()))}
 errorlog = {repr(str(self._charm_state.flask_error_log.absolute()))}
 statsd_host = {repr(self._charm_state.flask_statsd_host)}
@@ -75,7 +75,7 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         Returns:
             The path to the web server configuration file.
         """
-        return self._charm_state.base_dir / "gunicorn.conf.py"
+        return FLASK_BASE_DIR / "gunicorn.conf.py"
 
     @property
     def command(self) -> list[str]:
@@ -90,7 +90,7 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
             "gunicorn",
             "-c",
             str(self._config_path),
-            self._charm_state.flask_wsgi_app_path,
+            "app:app",
         ]
 
     @property
