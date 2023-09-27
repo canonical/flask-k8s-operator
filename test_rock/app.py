@@ -99,12 +99,3 @@ def postgresql_status():
 def get_env():
     """Return environment variables"""
     return jsonify(dict(os.environ))
-
-
-app2 = Flask("app2")
-app2.config.from_prefixed_env()
-
-
-@app2.route("/")
-def app2_hello_world():
-    return "Hello, Many World!"

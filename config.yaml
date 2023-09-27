@@ -4,7 +4,7 @@ options:
   database_migration_script:
     type: string
     description: >-
-      Specifies the relative path from /srv/flask/app that points to a shell script
+      Specifies the relative path from /flask/app that points to a shell script
       executing database migrations for the Flask application. This script is
       designed to run once for each Flask container unit. However, users must ensure:
       1. The script can be executed multiple times without issues;

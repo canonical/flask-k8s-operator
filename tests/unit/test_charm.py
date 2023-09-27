@@ -16,7 +16,7 @@ from constants import FLASK_CONTAINER_NAME
 from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
-FLASK_BASE_DIR = "/srv/flask"
+FLASK_BASE_DIR = "/flask"
 
 
 def test_flask_pebble_layer(harness: Harness) -> None:

@@ -23,12 +23,12 @@ def harness_fixture() -> typing.Generator[Harness, None, None]:
     harness = Harness(FlaskCharm)
     harness.set_leader()
     root = harness.get_filesystem_root(FLASK_CONTAINER_NAME)
-    (root / "srv/flask/app").mkdir(parents=True)
+    (root / "flask/app").mkdir(parents=True)
     harness.set_can_connect(FLASK_CONTAINER_NAME, True)
 
     def check_config_handler(_):
         """Handle the gunicorn check config command."""
-        config_file = root / "srv/flask/gunicorn.conf.py"
+        config_file = root / "flask/gunicorn.conf.py"
         if config_file.is_file():
             return ops.testing.ExecResult(0)
         return ops.testing.ExecResult(1)
@@ -40,7 +40,7 @@ def harness_fixture() -> typing.Generator[Harness, None, None]:
             "-m",
             "gunicorn",
             "-c",
-            "/srv/flask/gunicorn.conf.py",
+            "/flask/gunicorn.conf.py",
             "app:app",
             "--check-config",
         ],
