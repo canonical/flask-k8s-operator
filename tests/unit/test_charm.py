@@ -12,7 +12,7 @@ import yaml
 from ops.testing import Harness
 
 from charm_state import KNOWN_CHARM_CONFIG, CharmState
-from constants import FLASK_CONTAINER_NAME
+from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
 from flask_app import FlaskApp
 from webserver import GunicornWebserver
 
@@ -44,7 +44,8 @@ def test_flask_pebble_layer(harness: Harness) -> None:
         database_migration=harness.charm._database_migration,
     )
     flask_app.restart_flask()
-    flask_layer = harness.get_container_pebble_plan("flask-app").to_dict()["services"]["flask-app"]
+    plan = harness.get_container_pebble_plan(FLASK_CONTAINER_NAME)
+    flask_layer = plan.to_dict()["services"][FLASK_SERVICE_NAME]
     assert flask_layer == {
         "override": "replace",
         "summary": "Flask application service",
