@@ -117,7 +117,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         proxy: proxy information.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         *,
         app_config: dict[str, int | str | bool] | None = None,
