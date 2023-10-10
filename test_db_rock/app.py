@@ -32,7 +32,7 @@ def create_user():
     username = request.json["username"]
     password = request.json["password"]
     session = Session()
-    hashed_password = generate_password_hash(password, method="sha256")
+    hashed_password = generate_password_hash(password)
     new_user = User(username=username, password=hashed_password)
 
     if session.query(User).filter_by(username=username).first():
