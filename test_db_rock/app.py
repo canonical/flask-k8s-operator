@@ -24,7 +24,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     username = Column(String(80), unique=True, nullable=False)
-    password = Column(String(120), nullable=False)
+    password = Column(String(256), nullable=False)
 
 
 @app.route("/users", methods=["POST"])
