@@ -81,6 +81,7 @@ class FlaskCharm(ops.CharmBase):
         self.framework.observe(
             self.on.secret_storage_relation_changed, self._on_secret_storage_relation_changed
         )
+        self.framework.observe(self.on.flask_app_pebble_ready, self._on_flask_app_pebble_ready)
 
     def _on_config_changed(self, _event: ops.EventBase) -> None:
         """Configure the flask pebble service layer.
@@ -136,6 +137,10 @@ class FlaskCharm(ops.CharmBase):
         """Handle the update-status event."""
         if self._database_migration.get_status() == DatabaseMigrationStatus.FAILED:
             self._restart_flask()
+
+    def _on_flask_app_pebble_ready(self, _: ops.PebbleReadyEvent) -> None:
+        """Handle the pebble-ready event."""
+        self._restart_flask()
 
 
 if __name__ == "__main__":  # pragma: nocover
