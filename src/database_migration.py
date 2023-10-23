@@ -115,7 +115,7 @@ class DatabaseMigration:
                 ["/bin/bash", "-xeo", "pipefail", self.script],
                 environment=environment,
                 working_dir=str(FLASK_APP_DIR),
-            ).wait()
+            ).wait_output()
             self._set_status(DatabaseMigrationStatus.COMPLETED)
             self._set_completed_script(self.script)
         except ExecError as exc:
