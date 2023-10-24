@@ -11,10 +11,10 @@ import unittest.mock
 import ops
 import pytest
 from ops.testing import Harness
-
-from charm import FlaskCharm
 from xiilib.database_migration import DatabaseMigrationStatus
 from xiilib.flask.constants import FLASK_CONTAINER_NAME
+
+from charm import FlaskCharm
 
 
 @pytest.fixture(name="harness")

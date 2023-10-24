@@ -10,13 +10,15 @@ import unittest.mock
 
 import yaml
 from ops.testing import Harness
-
 from xiilib.flask.charm_state import KNOWN_CHARM_CONFIG, CharmState
-from xiilib.flask.constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
+from xiilib.flask.constants import (
+    FLASK_APP_DIR,
+    FLASK_BASE_DIR,
+    FLASK_CONTAINER_NAME,
+    FLASK_SERVICE_NAME,
+)
 from xiilib.flask.flask_app import FlaskApp
 from xiilib.webserver import GunicornWebserver
-
-FLASK_BASE_DIR = "/flask"
 
 
 def test_flask_pebble_layer(harness: Harness) -> None:
@@ -36,6 +38,9 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     webserver = GunicornWebserver(
         charm_state=charm_state,
         container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),
+        service_name=FLASK_SERVICE_NAME,
+        app_dir=FLASK_APP_DIR,
+        base_dir=FLASK_BASE_DIR,
     )
     flask_app = FlaskApp(
         charm=harness.charm,
@@ -43,7 +48,7 @@ def test_flask_pebble_layer(harness: Harness) -> None:
         webserver=webserver,
         database_migration=harness.charm._database_migration,
     )
-    flask_app.restart_flask()
+    flask_app.restart()
     plan = harness.get_container_pebble_plan(FLASK_CONTAINER_NAME)
     flask_layer = plan.to_dict()["services"][FLASK_SERVICE_NAME]
     assert flask_layer == {

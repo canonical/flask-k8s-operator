@@ -6,7 +6,6 @@
 import unittest.mock
 
 import pytest
-
 from xiilib.databases import get_uris
 
 DATABASE_URL_TEST_PARAMS = [

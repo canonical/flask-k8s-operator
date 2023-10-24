@@ -11,12 +11,18 @@ import ops
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 
-from xiilib.flask.exceptions import CharmConfigInvalidError
-from xiilib.flask.flask_app import FlaskApp
+from xiilib.exceptions import CharmConfigInvalidError
 
 SUPPORTED_DB_INTERFACES = {"mysql_client": "mysql", "postgresql_client": "postgresql"}
 
 logger = logging.getLogger(__name__)
+
+
+class Application(typing.Protocol):
+    """Interface for the charm managed application"""
+
+    def restart(self):
+        """Restart the application"""
 
 
 def make_database_requirers(
@@ -102,20 +108,20 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         charm: ops.CharmBase,
-        flask_app: FlaskApp,
+        application: Application,
         database_requirers: typing.Dict[str, DatabaseRequires],
     ):
         """Initialize a new instance of the Databases class.
 
         Args:
             charm: The main charm. Used for events callbacks.
-            flask_app: The flask application manager object.
+            application: The application manager object.
             database_requirers: Database requirers created by make_database_requirers.
         """
         # The following is necessary to be able to subscribe to callbacks from ops.framework
         super().__init__(charm, "databases")
         self._charm = charm
-        self._flask_app = flask_app
+        self._application = application
         self._databases = database_requirers
         for database_requirer in database_requirers.values():
             self._charm.framework.observe(
@@ -136,18 +142,18 @@ class Databases(ops.Object):  # pylint: disable=too-few-public-methods
         if self._charm.unit.is_leader():
             self._charm.app.status = status
 
-    def _restart_flask(self) -> None:
-        """Restart or start the flask service if not started with the latest configuration."""
+    def _restart(self) -> None:
+        """Restart or start the service if not started with the latest configuration."""
         try:
-            self._flask_app.restart_flask()
+            self._application.restart()
             self._update_status(ops.ActiveStatus())
         except CharmConfigInvalidError as exc:
             self._update_status(ops.BlockedStatus(exc.msg))
 
     def _on_database_requires_event(self, _event: DatabaseRequiresEvent) -> None:
-        """Configure the flask pebble service layer in case of DatabaseRequiresEvent.
+        """Configure the pebble service layer in case of DatabaseRequiresEvent.
 
         Args:
             _event: the database-requires-changed event that trigger this callback function.
         """
-        self._restart_flask()
+        self._restart()

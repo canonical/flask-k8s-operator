@@ -11,8 +11,7 @@ import typing
 import ops
 from ops.pebble import ExecError, PathError
 
-from xiilib.flask.constants import FLASK_APP_DIR, FLASK_BASE_DIR, FLASK_SERVICE_NAME
-from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
 
@@ -107,15 +106,24 @@ class GunicornWebserver:
         self,
         charm_state: GunicronCharmState,
         container: ops.Container,
+        service_name: str,
+        base_dir: pathlib.Path,
+        app_dir: pathlib.Path,
     ):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:
             charm_state: The state of the charm that the GunicornWebserver instance belongs to.
             container: The WSGI application container in this charm unit.
+            service_name: The WSGI application pebble service name.
+            base_dir: The project base directory in the WSGI application container.
+            app_dir: The WSGI application directory in the WSGI application container.
         """
         self._charm_state = charm_state
         self._container = container
+        self._service_name = service_name
+        self._base_dir = base_dir
+        self._app_dir = app_dir
 
     @property
     def _config(self) -> str:
@@ -138,7 +146,7 @@ class GunicornWebserver:
         new_line = "\n"
         config = f"""\
 bind = ['0.0.0.0:{self._charm_state.port}']
-chdir = {repr(str(FLASK_APP_DIR))}
+chdir = {repr(str(self._app_dir))}
 accesslog = {repr(str(self._charm_state.application_log_file.absolute()))}
 errorlog = {repr(str(self._charm_state.application_error_log_file.absolute()))}
 statsd_host = {repr(self._charm_state.statsd_host)}
@@ -152,7 +160,7 @@ statsd_host = {repr(self._charm_state.statsd_host)}
         Returns:
             The path to the web server configuration file.
         """
-        return FLASK_BASE_DIR / "gunicorn.conf.py"
+        return self._base_dir / "gunicorn.conf.py"
 
     @property
     def command(self) -> list[str]:
@@ -188,17 +196,17 @@ statsd_host = {repr(self._charm_state.statsd_host)}
         """
         return signal.SIGHUP
 
-    def update_config(self, flask_environment: dict[str, str], is_webserver_running: bool) -> None:
+    def update_config(self, environment: dict[str, str], is_webserver_running: bool) -> None:
         """Update and apply the configuration file of the web server.
 
         Args:
-            flask_environment: Environment variables used to run the flask application.
+            environment: Environment variables used to run the application.
             is_webserver_running: Indicates if the web server container is currently running.
 
         Raises:
             CharmConfigInvalidError: if the charm configuration is not valid.
         """
-        self._prepare_flask_log_dir()
+        self._prepare_log_dir()
         webserver_config_path = str(self._config_path)
         try:
             current_webserver_config = self._container.pull(webserver_config_path)
@@ -208,7 +216,7 @@ statsd_host = {repr(self._charm_state.statsd_host)}
         if current_webserver_config == self._config:
             return
         exec_process = self._container.exec(
-            self._check_config_command, environment=flask_environment
+            self._check_config_command, environment=environment
         )
         try:
             exec_process.wait_output()
@@ -224,10 +232,10 @@ statsd_host = {repr(self._charm_state.statsd_host)}
             ) from exc
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
-            self._container.send_signal(self._reload_signal, FLASK_SERVICE_NAME)
+            self._container.send_signal(self._reload_signal, self._service_name)
 
-    def _prepare_flask_log_dir(self) -> None:
-        """Prepare Flask access and error log directory for the Flask application."""
+    def _prepare_log_dir(self) -> None:
+        """Prepare access and error log directory for the application."""
         container = self._container
         for log in (
             self._charm_state.application_log_file,

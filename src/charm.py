@@ -9,12 +9,17 @@ import typing
 
 import ops
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
-
 from xiilib.database_migration import DatabaseMigration, DatabaseMigrationStatus
 from xiilib.databases import Databases, get_uris, make_database_requirers
+from xiilib.exceptions import CharmConfigInvalidError
 from xiilib.flask.charm_state import CharmState
-from xiilib.flask.constants import FLASK_CONTAINER_NAME, FLASK_STATE_DIR
-from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.flask.constants import (
+    FLASK_APP_DIR,
+    FLASK_BASE_DIR,
+    FLASK_CONTAINER_NAME,
+    FLASK_SERVICE_NAME,
+    FLASK_STATE_DIR,
+)
 from xiilib.flask.flask_app import FlaskApp
 from xiilib.flask.observability import FlaskObservability
 from xiilib.flask.secret_storage import FlaskSecretStorage
@@ -54,6 +59,9 @@ class FlaskCharm(ops.CharmBase):
         webserver = GunicornWebserver(
             charm_state=self._charm_state,
             container=self.unit.get_container(FLASK_CONTAINER_NAME),
+            service_name=FLASK_SERVICE_NAME,
+            app_dir=FLASK_APP_DIR,
+            base_dir=FLASK_BASE_DIR,
         )
         self._flask_app = FlaskApp(
             charm=self,
@@ -63,7 +71,7 @@ class FlaskCharm(ops.CharmBase):
         )
         self._databases = Databases(
             charm=self,
-            flask_app=self._flask_app,
+            application=self._flask_app,
             database_requirers=database_requirers,
         )
         self._ingress = IngressPerAppRequirer(
@@ -129,7 +137,7 @@ class FlaskCharm(ops.CharmBase):
     def _restart_flask(self) -> None:
         """Restart or start the flask service if not started with the latest configuration."""
         try:
-            self._flask_app.restart_flask()
+            self._flask_app.restart()
             self._update_app_and_unit_status(ops.ActiveStatus())
         except CharmConfigInvalidError as exc:
             self._update_app_and_unit_status(ops.BlockedStatus(exc.msg))

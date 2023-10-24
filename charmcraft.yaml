@@ -13,5 +13,3 @@ parts:
     build-packages:
       - cargo
       - rustc
-    prime:
-      - xiilib

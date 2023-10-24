@@ -12,9 +12,13 @@ import unittest.mock
 import ops
 import pytest
 from ops.testing import Harness
-
 from xiilib.flask.charm_state import CharmState
-from xiilib.flask.constants import FLASK_BASE_DIR, FLASK_CONTAINER_NAME
+from xiilib.flask.constants import (
+    FLASK_APP_DIR,
+    FLASK_BASE_DIR,
+    FLASK_CONTAINER_NAME,
+    FLASK_SERVICE_NAME,
+)
 from xiilib.flask.flask_app import FlaskApp
 from xiilib.webserver import GunicornWebserver
 
@@ -68,17 +72,21 @@ def test_gunicorn_config(
         is_secret_storage_ready=True,
         **charm_state_params,
     )
-    webserver = GunicornWebserver(charm_state=charm_state, container=container)
+    webserver = GunicornWebserver(
+        charm_state=charm_state,
+        container=container,
+        service_name=FLASK_SERVICE_NAME,
+        app_dir=FLASK_APP_DIR,
+        base_dir=FLASK_BASE_DIR,
+    )
     flask_app = FlaskApp(
         charm=harness.charm,
         charm_state=charm_state,
         webserver=webserver,
         database_migration=database_migration_mock,
     )
-    flask_app.restart_flask()
-    webserver.update_config(
-        is_webserver_running=False, flask_environment=flask_app._flask_environment()
-    )
+    flask_app.restart()
+    webserver.update_config(is_webserver_running=False, environment=flask_app._flask_environment())
     assert container.pull(f"{FLASK_BASE_DIR}/gunicorn.conf.py").read() == config_file
 
 
@@ -98,6 +106,9 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running, database_mi
     webserver = GunicornWebserver(
         charm_state=charm_state,
         container=container,
+        service_name=FLASK_SERVICE_NAME,
+        app_dir=FLASK_APP_DIR,
+        base_dir=FLASK_BASE_DIR,
     )
     flask_app = FlaskApp(
         charm=harness.charm,
@@ -105,10 +116,10 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running, database_mi
         webserver=webserver,
         database_migration=database_migration_mock,
     )
-    flask_app.restart_flask()
+    flask_app.restart()
     send_signal_mock = unittest.mock.MagicMock()
     monkeypatch.setattr(container, "send_signal", send_signal_mock)
     webserver.update_config(
-        is_webserver_running=is_running, flask_environment=flask_app._flask_environment()
+        is_webserver_running=is_running, environment=flask_app._flask_environment()
     )
     assert send_signal_mock.call_count == (1 if is_running else 0)

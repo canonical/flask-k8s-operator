@@ -6,9 +6,8 @@ import copy
 import unittest.mock
 
 import pytest
-
+from xiilib.exceptions import CharmConfigInvalidError
 from xiilib.flask.charm_state import CharmState
-from xiilib.flask.exceptions import CharmConfigInvalidError
 
 # this is a unit test file
 # pylint: disable=protected-access

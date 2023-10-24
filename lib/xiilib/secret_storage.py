@@ -19,10 +19,10 @@ class SecretStorage(ops.Object, abc.ABC):
     def __init__(
         self, charm: ops.CharmBase, keys: list[str], peer_relation_name: str = "secret-storage"
     ):
-        """Initialize the SecretStorage with a given FlaskCharm object.
+        """Initialize the SecretStorage with a given Charm object.
 
         Args:
-            charm (FlaskCharm): The FlaskCharm object that uses the SecretStorage.
+            charm: The charm object that uses the SecretStorage.
             keys: possible keys of secret values to be stored in the secret storage.
             peer_relation_name: the name of the peer relation to be used to store secrets.
         """
@@ -75,23 +75,6 @@ class SecretStorage(ops.Object, abc.ABC):
             return False
         relation_data = relation.data[self._charm.app]
         return all(relation_data.get(k) for k in self._keys)
-
-    def _get_relation_data(self) -> ops.RelationDataContent:
-        """Retrieve the relation data associated with the FlaskCharm object.
-
-        Returns:
-            RelationDataContent: The data of the relation associated with the FlaskCharm app.
-
-        Raises:
-            RuntimeError: If SecretStorage is not initialized.
-        """
-        if not self.is_initialized:
-            raise RuntimeError("SecretStorage is not initialized")
-        relation = typing.cast(
-            ops.Relation, self._charm.model.get_relation(self._peer_relation_name)
-        )
-        data = relation.data[self._charm.app]
-        return data
 
     def set_secret(self, key: str, value: str) -> None:
         """Set the secret value in the relation data.

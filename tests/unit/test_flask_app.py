@@ -11,7 +11,6 @@ import typing
 import unittest.mock
 
 import pytest
-
 from xiilib.flask.charm_state import CharmState
 from xiilib.flask.constants import FLASK_ENV_CONFIG_PREFIX
 from xiilib.flask.flask_app import FlaskApp

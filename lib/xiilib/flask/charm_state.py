@@ -21,7 +21,7 @@ from pydantic import (  # pylint: disable=no-name-in-module
 )
 
 from xiilib.flask.constants import FLASK_APP_DIR
-from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.exceptions import CharmConfigInvalidError
 from xiilib.flask.secret_storage import FlaskSecretStorage
 from xiilib.webserver import WebserverConfig
 

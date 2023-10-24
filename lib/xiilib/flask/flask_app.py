@@ -10,7 +10,7 @@ import ops
 
 from xiilib.flask.charm_state import KNOWN_CHARM_CONFIG, CharmState
 from xiilib.flask.constants import FLASK_APP_DIR, FLASK_ENV_CONFIG_PREFIX, FLASK_SERVICE_NAME
-from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.exceptions import CharmConfigInvalidError
 from xiilib.database_migration import DatabaseMigration
 from xiilib.webserver import GunicornWebserver
 
@@ -95,7 +95,7 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             },
         )
 
-    def restart_flask(self) -> None:
+    def restart(self) -> None:
         """Restart or start the flask service if not started with the latest configuration.
 
         Raises:
@@ -111,7 +111,7 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
         container.add_layer("flask", self._flask_layer(), combine=True)
         is_webserver_running = container.get_service(FLASK_SERVICE_NAME).is_running()
         self._webserver.update_config(
-            flask_environment=self._flask_environment(),
+            environment=self._flask_environment(),
             is_webserver_running=is_webserver_running,
         )
         self._database_migration.run(self._flask_environment(), working_dir=FLASK_APP_DIR)

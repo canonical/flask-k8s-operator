@@ -11,7 +11,7 @@ from typing import cast
 import ops
 from ops.pebble import ExecError
 
-from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
 

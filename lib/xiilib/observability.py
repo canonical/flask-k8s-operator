@@ -37,7 +37,7 @@ class ObservabilityCharmState(typing.Protocol):
 
 
 class Observability(ops.Object):  # pylint: disable=too-few-public-methods
-    """A class representing the observability stack for Flask application."""
+    """A class representing the observability stack for charm managed application."""
 
     def __init__(
         self, charm: ops.CharmBase, charm_state: ObservabilityCharmState, container_name: str

@@ -1,7 +1,7 @@
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
-"""Exceptions used by the Flask charm."""
+"""Exceptions used by charms."""
 
 
 class CharmConfigInvalidError(Exception):
