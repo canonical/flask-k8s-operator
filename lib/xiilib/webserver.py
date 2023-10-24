@@ -78,7 +78,7 @@ class WSGICharmState(typing.Protocol):
         """
 
 
-class GunicronCharmState(WSGICharmState, typing.Protocol):
+class GunicornCharmState(WSGICharmState, typing.Protocol):
     """Charm state required by the Gunicorn class.
 
     Attrs:
@@ -104,7 +104,7 @@ class GunicornWebserver:
 
     def __init__(
         self,
-        charm_state: GunicronCharmState,
+        charm_state: GunicornCharmState,
         container: ops.Container,
         service_name: str,
         base_dir: pathlib.Path,
