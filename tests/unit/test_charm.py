@@ -11,10 +11,10 @@ import unittest.mock
 import yaml
 from ops.testing import Harness
 
-from charm_state import KNOWN_CHARM_CONFIG, CharmState
-from constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
-from flask_app import FlaskApp
-from webserver import GunicornWebserver
+from xiilib.flask.charm_state import KNOWN_CHARM_CONFIG, CharmState
+from xiilib.flask.constants import FLASK_CONTAINER_NAME, FLASK_SERVICE_NAME
+from xiilib.flask.flask_app import FlaskApp
+from xiilib.webserver import GunicornWebserver
 
 FLASK_BASE_DIR = "/flask"
 
@@ -35,7 +35,7 @@ def test_flask_pebble_layer(harness: Harness) -> None:
     )
     webserver = GunicornWebserver(
         charm_state=charm_state,
-        flask_container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),
+        container=harness.charm.unit.get_container(FLASK_CONTAINER_NAME),
     )
     flask_app = FlaskApp(
         charm=harness.charm,

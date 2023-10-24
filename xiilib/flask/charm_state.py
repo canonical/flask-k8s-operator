@@ -20,10 +20,10 @@ from pydantic import (  # pylint: disable=no-name-in-module
     validator,
 )
 
-from charm_types import WebserverConfig
-from constants import FLASK_APP_DIR
-from exceptions import CharmConfigInvalidError
-from secret_storage import SecretStorage
+from xiilib.flask.constants import FLASK_APP_DIR
+from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.flask.secret_storage import FlaskSecretStorage
+from xiilib.webserver import WebserverConfig
 
 if typing.TYPE_CHECKING:
     from charm import FlaskCharm
@@ -108,10 +108,10 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         app_config: user-defined configurations for the Flask application.
         database_migration_script: The database migration script path.
         database_uris: a mapping of available database environment variable to database uris.
-        flask_port: the port number to use for the Flask server.
-        flask_access_log: the file path for the Flask access log.
-        flask_error_log: the file path for the Flask error log.
-        flask_statsd_host: the statsd server host for Flask metrics.
+        port: the port number to use for the Flask server.
+        application_log_file: the file path for the Flask access log.
+        application_error_log_file: the file path for the Flask error log.
+        statsd_host: the statsd server host for Flask metrics.
         flask_secret_key: the charm managed flask secret key.
         is_secret_storage_ready: whether the secret storage system is ready.
         proxy: proxy information.
@@ -178,7 +178,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def from_charm(
-        cls, charm: "FlaskCharm", secret_storage: SecretStorage, database_uris: dict[str, str]
+        cls, charm: "FlaskCharm", secret_storage: FlaskSecretStorage, database_uris: dict[str, str]
     ) -> "CharmState":
         """Initialize a new instance of the CharmState class from the associated charm.
 
@@ -270,7 +270,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return self._app_config.copy()
 
     @property
-    def flask_port(self) -> int:
+    def port(self) -> int:
         """Gets the port number to use for the Flask server.
 
         Returns:
@@ -279,7 +279,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return 8000
 
     @property
-    def flask_access_log(self) -> pathlib.Path:
+    def application_log_file(self) -> pathlib.Path:
         """Returns the file path for the Flask access log.
 
         Returns:
@@ -288,7 +288,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return pathlib.Path("/var/log/flask/access.log")
 
     @property
-    def flask_error_log(self) -> pathlib.Path:
+    def application_error_log_file(self) -> pathlib.Path:
         """Returns the file path for the Flask error log.
 
         Returns:
@@ -297,7 +297,7 @@ class CharmState:  # pylint: disable=too-many-instance-attributes
         return pathlib.Path("/var/log/flask/error.log")
 
     @property
-    def flask_statsd_host(self) -> str:
+    def statsd_host(self) -> str:
         """Returns the statsd server host for Flask metrics.
 
         Returns:

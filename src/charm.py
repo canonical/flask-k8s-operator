@@ -10,15 +10,15 @@ import typing
 import ops
 from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
 
-from charm_state import CharmState
-from constants import FLASK_CONTAINER_NAME
-from database_migration import DatabaseMigration, DatabaseMigrationStatus
-from databases import Databases, get_uris, make_database_requirers
-from exceptions import CharmConfigInvalidError
-from flask_app import FlaskApp
-from observability import Observability
-from secret_storage import SecretStorage
-from webserver import GunicornWebserver
+from xiilib.database_migration import DatabaseMigration, DatabaseMigrationStatus
+from xiilib.databases import Databases, get_uris, make_database_requirers
+from xiilib.flask.charm_state import CharmState
+from xiilib.flask.constants import FLASK_CONTAINER_NAME, FLASK_STATE_DIR
+from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.flask.flask_app import FlaskApp
+from xiilib.flask.observability import FlaskObservability
+from xiilib.flask.secret_storage import FlaskSecretStorage
+from xiilib.webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ class FlaskCharm(ops.CharmBase):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
-        self._secret_storage = SecretStorage(charm=self)
-        database_requirers = make_database_requirers(self)
+        self._secret_storage = FlaskSecretStorage(charm=self)
+        database_requirers = make_database_requirers(self, "flask-app")
 
         try:
             self._charm_state = CharmState.from_charm(
@@ -47,12 +47,13 @@ class FlaskCharm(ops.CharmBase):
             return
 
         self._database_migration = DatabaseMigration(
-            flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
+            container=self.unit.get_container(FLASK_CONTAINER_NAME),
             charm_state=self._charm_state,
+            state_dir=FLASK_STATE_DIR,
         )
         webserver = GunicornWebserver(
             charm_state=self._charm_state,
-            flask_container=self.unit.get_container(FLASK_CONTAINER_NAME),
+            container=self.unit.get_container(FLASK_CONTAINER_NAME),
         )
         self._flask_app = FlaskApp(
             charm=self,
@@ -67,14 +68,14 @@ class FlaskCharm(ops.CharmBase):
         )
         self._ingress = IngressPerAppRequirer(
             self,
-            port=self._charm_state.flask_port,
+            port=self._charm_state.port,
             # We're forced to use the app's service endpoint
             # as the ingress per app interface currently always routes to the leader.
             # https://github.com/canonical/traefik-k8s-operator/issues/159
             host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
-        self._observability = Observability(charm=self, charm_state=self._charm_state)
+        self._observability = FlaskObservability(charm=self, charm_state=self._charm_state)
 
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.rotate_secret_key_action, self._on_rotate_secret_key_action)

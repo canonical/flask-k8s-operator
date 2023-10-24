@@ -13,8 +13,8 @@ import pytest
 from ops.testing import Harness
 
 from charm import FlaskCharm
-from constants import FLASK_CONTAINER_NAME
-from database_migration import DatabaseMigrationStatus
+from xiilib.database_migration import DatabaseMigrationStatus
+from xiilib.flask.constants import FLASK_CONTAINER_NAME
 
 
 @pytest.fixture(name="harness")

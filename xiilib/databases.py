@@ -11,27 +11,31 @@ import ops
 import yaml
 from charms.data_platform_libs.v0.data_interfaces import DatabaseRequires, DatabaseRequiresEvent
 
-from constants import FLASK_DATABASE_NAME, FLASK_SUPPORTED_DB_INTERFACES
-from exceptions import CharmConfigInvalidError
-from flask_app import FlaskApp
+from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.flask.flask_app import FlaskApp
+
+SUPPORTED_DB_INTERFACES = {"mysql_client": "mysql", "postgresql_client": "postgresql"}
 
 logger = logging.getLogger(__name__)
 
 
-def make_database_requirers(charm: ops.CharmBase) -> typing.Dict[str, DatabaseRequires]:
+def make_database_requirers(
+    charm: ops.CharmBase, database_name: str
+) -> typing.Dict[str, DatabaseRequires]:
     """Create database requirer objects for the charm.
 
     Args:
         charm: The requiring charm.
+        database_name: the required database name
 
     Returns: A dictionary which is the database uri environment variable name and the
         value is the corresponding database requirer object.
     """
     metadata = yaml.safe_load(pathlib.Path("metadata.yaml").read_text(encoding="utf-8"))
     db_interfaces = (
-        FLASK_SUPPORTED_DB_INTERFACES[require["interface"]]
+        SUPPORTED_DB_INTERFACES[require["interface"]]
         for require in metadata["requires"].values()
-        if require["interface"] in FLASK_SUPPORTED_DB_INTERFACES
+        if require["interface"] in SUPPORTED_DB_INTERFACES
     )
     # automatically create database relation requirers to manage database relations
     # one database relation requirer is required for each of the database relations
@@ -40,7 +44,7 @@ def make_database_requirers(charm: ops.CharmBase) -> typing.Dict[str, DatabaseRe
         name: DatabaseRequires(
             charm,
             relation_name=name,
-            database_name=FLASK_DATABASE_NAME,
+            database_name=database_name,
         )
         for name in db_interfaces
     }

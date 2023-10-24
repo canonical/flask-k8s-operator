@@ -8,11 +8,11 @@ import shlex
 
 import ops
 
-from charm_state import KNOWN_CHARM_CONFIG, CharmState
-from constants import FLASK_ENV_CONFIG_PREFIX, FLASK_SERVICE_NAME
-from database_migration import DatabaseMigration
-from exceptions import CharmConfigInvalidError
-from webserver import GunicornWebserver
+from xiilib.flask.charm_state import KNOWN_CHARM_CONFIG, CharmState
+from xiilib.flask.constants import FLASK_APP_DIR, FLASK_ENV_CONFIG_PREFIX, FLASK_SERVICE_NAME
+from xiilib.flask.exceptions import CharmConfigInvalidError
+from xiilib.database_migration import DatabaseMigration
+from xiilib.webserver import GunicornWebserver
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ class FlaskApp:  # pylint: disable=too-few-public-methods
             flask_environment=self._flask_environment(),
             is_webserver_running=is_webserver_running,
         )
-        self._database_migration.run(self._flask_environment())
+        self._database_migration.run(self._flask_environment(), working_dir=FLASK_APP_DIR)
         container.replan()
         if (
             self._database_migration.get_completed_script() is not None

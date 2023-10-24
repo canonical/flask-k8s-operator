@@ -4,14 +4,14 @@
 """Provide the DatabaseMigration class to manage database migrations."""
 import enum
 import logging
+import pathlib
+import typing
 from typing import cast
 
 import ops
 from ops.pebble import ExecError
 
-from charm_state import CharmState
-from constants import FLASK_APP_DIR, FLASK_STATE_DIR
-from exceptions import CharmConfigInvalidError
+from xiilib.flask.exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,22 @@ class DatabaseMigrationStatus(str, enum.Enum):
     PENDING = "PENDING"
 
 
+class DatabaseMigrationCharmState(typing.Protocol):  # pylint: disable=too-few-public-methods
+    """Charm state required for DatabaseMigration class.
+
+    Attrs:
+        database_migration_script: the database migration configuration, None for unset.
+    """
+
+    @property
+    def database_migration_script(self) -> str | None:
+        """Return the database migration script configuration.
+
+        Returns:
+            the database migration configuration, None for unset.
+        """
+
+
 class DatabaseMigration:
     """The DatabaseMigration class that manages database migrations.
 
@@ -37,18 +53,23 @@ class DatabaseMigration:
         script: the database migration script.
     """
 
-    _STATUS_FILE = FLASK_STATE_DIR / "database-migration-status"
-    _COMPLETED_SCRIPT_FILE = FLASK_STATE_DIR / "completed-database-migration"
-
-    def __init__(self, flask_container: ops.Container, charm_state: CharmState):
+    def __init__(
+        self,
+        container: ops.Container,
+        charm_state: DatabaseMigrationCharmState,
+        state_dir: pathlib.Path,
+    ):
         """Initialize the DatabaseMigration instance.
 
         Args:
-            flask_container: The flask container object.
+            container: The application container object.
             charm_state: The charm state.
+            state_dir: the directory in the application container to store migration states.
         """
-        self._container = flask_container
+        self._container = container
         self._charm_state = charm_state
+        self._status_file = state_dir / "database-migration-status"
+        self._completed_script_file = state_dir / "completed-database-migration"
 
     @property
     def script(self) -> str | None:
@@ -63,8 +84,8 @@ class DatabaseMigration:
         """
         return (
             DatabaseMigrationStatus.PENDING
-            if not self._container.exists(self._STATUS_FILE)
-            else DatabaseMigrationStatus(cast(str, self._container.pull(self._STATUS_FILE).read()))
+            if not self._container.exists(self._status_file)
+            else DatabaseMigrationStatus(cast(str, self._container.pull(self._status_file).read()))
         )
 
     def _set_status(self, status: DatabaseMigrationStatus) -> None:
@@ -73,7 +94,7 @@ class DatabaseMigration:
         Args:
             status: One of "PENDING", "COMPLETED", or "FAILED".
         """
-        self._container.push(self._STATUS_FILE, source=status, make_dirs=True)
+        self._container.push(self._status_file, source=status, make_dirs=True)
 
     def get_completed_script(self) -> str | None:
         """Get the database migration script that has completed in the current container.
@@ -81,8 +102,8 @@ class DatabaseMigration:
         Returns:
             The completed database migration script in the current container.
         """
-        if self._container.exists(self._COMPLETED_SCRIPT_FILE):
-            return cast(str, self._container.pull(self._COMPLETED_SCRIPT_FILE).read())
+        if self._container.exists(self._completed_script_file):
+            return cast(str, self._container.pull(self._completed_script_file).read())
         return None
 
     def _set_completed_script(self, script_path: str) -> None:
@@ -91,13 +112,14 @@ class DatabaseMigration:
         Args:
             script_path: The completed database migration script in the current container.
         """
-        self._container.push(self._COMPLETED_SCRIPT_FILE, script_path, make_dirs=True)
+        self._container.push(self._completed_script_file, script_path, make_dirs=True)
 
-    def run(self, environment: dict[str, str]) -> None:
+    def run(self, environment: dict[str, str], working_dir: pathlib.Path) -> None:
         """Run the database migration script if database migration is still pending.
 
         Args:
             environment: Environment variables that's required for the run.
+            working_dir: Working directory for the database migration run.
 
         Raises:
             CharmConfigInvalidError: if the database migration run failed.
@@ -114,7 +136,7 @@ class DatabaseMigration:
             self._container.exec(
                 ["/bin/bash", "-xeo", "pipefail", self.script],
                 environment=environment,
-                working_dir=str(FLASK_APP_DIR),
+                working_dir=str(working_dir),
             ).wait_output()
             self._set_status(DatabaseMigrationStatus.COMPLETED)
             self._set_completed_script(self.script)

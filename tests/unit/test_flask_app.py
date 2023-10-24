@@ -12,9 +12,9 @@ import unittest.mock
 
 import pytest
 
-from charm_state import CharmState
-from constants import FLASK_ENV_CONFIG_PREFIX
-from flask_app import FlaskApp
+from xiilib.flask.charm_state import CharmState
+from xiilib.flask.constants import FLASK_ENV_CONFIG_PREFIX
+from xiilib.flask.flask_app import FlaskApp
 
 
 @pytest.mark.parametrize(

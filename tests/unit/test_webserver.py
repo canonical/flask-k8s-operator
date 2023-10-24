@@ -13,10 +13,10 @@ import ops
 import pytest
 from ops.testing import Harness
 
-from charm_state import CharmState
-from constants import FLASK_BASE_DIR, FLASK_CONTAINER_NAME
-from flask_app import FlaskApp
-from webserver import GunicornWebserver
+from xiilib.flask.charm_state import CharmState
+from xiilib.flask.constants import FLASK_BASE_DIR, FLASK_CONTAINER_NAME
+from xiilib.flask.flask_app import FlaskApp
+from xiilib.webserver import GunicornWebserver
 
 GUNICORN_CONFIG_TEST_PARAMS = [
     pytest.param(
@@ -68,7 +68,7 @@ def test_gunicorn_config(
         is_secret_storage_ready=True,
         **charm_state_params,
     )
-    webserver = GunicornWebserver(charm_state=charm_state, flask_container=container)
+    webserver = GunicornWebserver(charm_state=charm_state, container=container)
     flask_app = FlaskApp(
         charm=harness.charm,
         charm_state=charm_state,
@@ -97,7 +97,7 @@ def test_webserver_reload(monkeypatch, harness: Harness, is_running, database_mi
     charm_state = CharmState(flask_secret_key="", is_secret_storage_ready=True)
     webserver = GunicornWebserver(
         charm_state=charm_state,
-        flask_container=container,
+        container=container,
     )
     flask_app = FlaskApp(
         charm=harness.charm,

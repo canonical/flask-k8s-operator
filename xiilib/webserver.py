@@ -11,11 +11,88 @@ import typing
 import ops
 from ops.pebble import ExecError, PathError
 
-from charm_state import CharmState
-from constants import FLASK_APP_DIR, FLASK_BASE_DIR, FLASK_SERVICE_NAME
-from exceptions import CharmConfigInvalidError
+from xiilib.flask.constants import FLASK_APP_DIR, FLASK_BASE_DIR, FLASK_SERVICE_NAME
+from xiilib.flask.exceptions import CharmConfigInvalidError
 
 logger = logging.getLogger(__name__)
+
+
+class WebserverConfig(typing.TypedDict):
+    """Represent the configuration values for a web server.
+
+    Attributes:
+        workers: The number of workers to use for the web server, or None if not specified.
+        threads: The number of threads per worker to use for the web server,
+            or None if not specified.
+        keepalive: The time to wait for requests on a Keep-Alive connection,
+            or None if not specified.
+        timeout: The request silence timeout for the web server, or None if not specified.
+    """
+
+    workers: int | None
+    threads: int | None
+    keepalive: datetime.timedelta | None
+    timeout: datetime.timedelta | None
+
+
+class WSGICharmState(typing.Protocol):
+    """Charm state for WSGI applications.
+
+    Attrs:
+        application_log_file: the path to the application's main log file.
+        application_error_log_file: the path to the application's error file.
+        port: the port number to use for the WSGI server.
+        webserver_config: the web server configuration file content for the charm.
+    """
+
+    @property
+    def application_log_file(self) -> pathlib.Path:
+        """Return the path to the application's main log file.
+
+        Returns:
+            The path to the application's main log file.
+        """
+
+    @property
+    def application_error_log_file(self) -> pathlib.Path:
+        """Return the path to the application's error log file.
+
+        Returns:
+            The path to the application's error log file.
+        """
+
+    @property
+    def port(self) -> int:
+        """Gets the port number to use for the WSGI server.
+
+        Returns:
+            The port number to use for the WSGI server.
+        """
+        return 8000
+
+    @property
+    def webserver_config(self) -> WebserverConfig:
+        """Get the web server configuration file content for the charm.
+
+        Returns:
+            The web server configuration file content for the charm.
+        """
+
+
+class GunicronCharmState(WSGICharmState, typing.Protocol):
+    """Charm state required by the Gunicorn class.
+
+    Attrs:
+        statsd_host: the statsd server host for gunicorn metrics
+    """
+
+    @property
+    def statsd_host(self) -> str:
+        """Returns the statsd server host for gunicorn metrics.
+
+        Returns:
+            The statsd server host for gunicorn metrics.
+        """
 
 
 class GunicornWebserver:
@@ -28,17 +105,17 @@ class GunicornWebserver:
 
     def __init__(
         self,
-        charm_state: CharmState,
-        flask_container: ops.Container,
+        charm_state: GunicronCharmState,
+        container: ops.Container,
     ):
         """Initialize a new instance of the GunicornWebserver class.
 
         Args:
             charm_state: The state of the charm that the GunicornWebserver instance belongs to.
-            flask_container: The Flask container in this charm unit.
+            container: The WSGI application container in this charm unit.
         """
         self._charm_state = charm_state
-        self._flask_container = flask_container
+        self._container = container
 
     @property
     def _config(self) -> str:
@@ -60,11 +137,11 @@ class GunicornWebserver:
             config_entries.append(f"{setting} = {setting_value}")
         new_line = "\n"
         config = f"""\
-bind = ['0.0.0.0:{self._charm_state.flask_port}']
+bind = ['0.0.0.0:{self._charm_state.port}']
 chdir = {repr(str(FLASK_APP_DIR))}
-accesslog = {repr(str(self._charm_state.flask_access_log.absolute()))}
-errorlog = {repr(str(self._charm_state.flask_error_log.absolute()))}
-statsd_host = {repr(self._charm_state.flask_statsd_host)}
+accesslog = {repr(str(self._charm_state.application_log_file.absolute()))}
+errorlog = {repr(str(self._charm_state.application_error_log_file.absolute()))}
+statsd_host = {repr(self._charm_state.statsd_host)}
 {new_line.join(config_entries)}"""
         return config
 
@@ -124,13 +201,13 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
         self._prepare_flask_log_dir()
         webserver_config_path = str(self._config_path)
         try:
-            current_webserver_config = self._flask_container.pull(webserver_config_path)
+            current_webserver_config = self._container.pull(webserver_config_path)
         except PathError:
             current_webserver_config = None
-        self._flask_container.push(webserver_config_path, self._config)
+        self._container.push(webserver_config_path, self._config)
         if current_webserver_config == self._config:
             return
-        exec_process = self._flask_container.exec(
+        exec_process = self._container.exec(
             self._check_config_command, environment=flask_environment
         )
         try:
@@ -147,12 +224,15 @@ statsd_host = {repr(self._charm_state.flask_statsd_host)}
             ) from exc
         if is_webserver_running:
             logger.info("gunicorn config changed, reloading")
-            self._flask_container.send_signal(self._reload_signal, FLASK_SERVICE_NAME)
+            self._container.send_signal(self._reload_signal, FLASK_SERVICE_NAME)
 
     def _prepare_flask_log_dir(self) -> None:
         """Prepare Flask access and error log directory for the Flask application."""
-        container = self._flask_container
-        for log in (self._charm_state.flask_access_log, self._charm_state.flask_error_log):
+        container = self._container
+        for log in (
+            self._charm_state.application_log_file,
+            self._charm_state.application_error_log_file,
+        ):
             log_dir = str(log.parent.absolute())
             if not container.isdir(log_dir):
                 container.make_dir(log_dir, make_parents=True)
