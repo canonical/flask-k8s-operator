@@ -8,7 +8,7 @@ import logging
 import typing
 
 import ops
-from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 from xiilib.database_migration import DatabaseMigration, DatabaseMigrationStatus
 from xiilib.databases import Databases, get_uris, make_database_requirers
 from xiilib.exceptions import CharmConfigInvalidError
@@ -77,10 +77,6 @@ class FlaskCharm(ops.CharmBase):
         self._ingress = IngressPerAppRequirer(
             self,
             port=self._charm_state.port,
-            # We're forced to use the app's service endpoint
-            # as the ingress per app interface currently always routes to the leader.
-            # https://github.com/canonical/traefik-k8s-operator/issues/159
-            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
         self._observability = FlaskObservability(charm=self, charm_state=self._charm_state)
