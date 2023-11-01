@@ -15,7 +15,7 @@ setup(
     packages=["xiilib", "xiilib.flask"],
     package_dir={"xiilib": "./lib/xiilib", "xiilib.flask": "./lib/xiilib/flask"},
     install_requires=requirements,
-    package_data={"xiilib.flask": ["cos/**"]},
+    package_data={"xiilib.flask": ["cos/**", "cos/**/.**"]},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
