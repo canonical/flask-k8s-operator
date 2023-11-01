@@ -1,3 +1,6 @@
+import os.path
+import pathlib
+
 from setuptools import setup
 
 requirements = ["cosl", "jsonschema>=4.19,<4.20", "ops", "pydantic>=1.10,<2"]
@@ -12,6 +15,7 @@ setup(
     packages=["xiilib", "xiilib.flask"],
     package_dir={"xiilib": "./lib/xiilib", "xiilib.flask": "./lib/xiilib/flask"},
     install_requires=requirements,
+    package_data={"xiilib.flask": ["cos/**"]},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

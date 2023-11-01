@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """Provide the Observability class to represent the observability stack for Flask application."""
+import pathlib
 import textwrap
 
 import ops
@@ -14,7 +15,12 @@ from xiilib.flask.charm_state import CharmState
 
 class FlaskObservability(Observability):
     def __init__(self, charm: ops.CharmBase, charm_state: CharmState):
-        super().__init__(charm, charm_state, FLASK_CONTAINER_NAME)
+        super().__init__(
+            charm,
+            charm_state=charm_state,
+            container_name=FLASK_CONTAINER_NAME,
+            cos_dir=str((pathlib.Path(__file__).parent / "cos").absolute()),
+        )
         self._charm.framework.observe(
             self._charm.on.statsd_prometheus_exporter_pebble_ready,
             self._on_statsd_prometheus_exporter_pebble_ready,
