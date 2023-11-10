@@ -1,1 +1,1 @@
-pip install git+https://github.com/canonical/xiilib.git
+https://github.com/canonical/xiilib/archive/refs/heads/main.tar.gz
