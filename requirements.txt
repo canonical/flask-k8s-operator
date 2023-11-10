@@ -1,4 +1,1 @@
-cosl
-jsonschema >=4.19,<4.20
-ops >= 2.6
-pydantic >= 1.10,<2
+pip install git+https://github.com/canonical/xiilib.git
