@@ -171,6 +171,7 @@ async def deploy_traefik_fixture(
     app = await model.deploy(
         "traefik-k8s",
         application_name=traefik_app_name,
+        channel="edge",
         trust=True,
         config={
             "external_hostname": external_hostname,
