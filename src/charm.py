@@ -8,7 +8,7 @@ import logging
 import typing
 
 import ops
-from charms.traefik_k8s.v1.ingress import IngressPerAppRequirer
+from charms.traefik_k8s.v2.ingress import IngressPerAppRequirer
 
 from charm_state import CharmState
 from constants import FLASK_CONTAINER_NAME
@@ -68,10 +68,6 @@ class FlaskCharm(ops.CharmBase):
         self._ingress = IngressPerAppRequirer(
             self,
             port=self._charm_state.flask_port,
-            # We're forced to use the app's service endpoint
-            # as the ingress per app interface currently always routes to the leader.
-            # https://github.com/canonical/traefik-k8s-operator/issues/159
-            host=f"{self.app.name}-endpoints.{self.model.name}.svc.cluster.local",
             strip_prefix=True,
         )
         self._observability = Observability(charm=self, charm_state=self._charm_state)
