@@ -1,1 +1,1 @@
-https://github.com/canonical/xiilib/archive/49d1c37e6469e7ecc78e05faacab2d42e34af318.tar.gz
+https://github.com/canonical/xiilib/archive/2a607d9e63ac37feb1b9cd60b68079cdb46ed7d9.tar.gz

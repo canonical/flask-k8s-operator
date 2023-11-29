@@ -8,7 +8,7 @@ import logging
 import typing
 
 import ops
-import xiilib.flask.charm
+import xiilib.flask
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,8 @@ class FlaskCharm(xiilib.flask.Charm):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
+        if not self.okay:
+            return
         for event_name, event_source in self.supported_events.items():
             self.framework.observe(event_source, getattr(self, f"_on_{event_name}"))
 
