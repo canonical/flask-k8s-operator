@@ -13,7 +13,7 @@ import xiilib.flask.charm
 logger = logging.getLogger(__name__)
 
 
-class FlaskCharm(xiilib.flask.charm.FlaskCharm):
+class FlaskCharm(xiilib.flask.Charm):
     """Flask Charm service."""
 
     def __init__(self, *args: typing.Any) -> None:
@@ -23,6 +23,8 @@ class FlaskCharm(xiilib.flask.charm.FlaskCharm):
             args: passthrough to CharmBase.
         """
         super().__init__(*args)
+        for event_name, event_source in self.supported_events.items():
+            self.framework.observe(event_source, getattr(self, f"_on_{event_name}"))
 
 
 if __name__ == "__main__":  # pragma: nocover
