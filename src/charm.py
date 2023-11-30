@@ -25,6 +25,7 @@ class FlaskCharm(xiilib.flask.Charm):
         super().__init__(*args)
         if not self.okay:
             return
+        self.framework.observe(self.on.config_changed, self._on_config_changed)
         for event_name, event_source in self.supported_events.items():
             self.framework.observe(event_source, getattr(self, f"_on_{event_name}"))
 
