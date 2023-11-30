@@ -1,4 +1,1 @@
-cosl
-jsonschema >=4.20,<4.21
-ops >= 2.6
-pydantic >= 1.10,<2
+https://github.com/canonical/xiilib/archive/c815dae637dbdba36f8b86f6e4886640edaa984f.tar.gz

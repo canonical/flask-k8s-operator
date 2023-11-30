@@ -192,7 +192,9 @@ async def deploy_prometheus_fixture(
     app = await model.deploy(
         "prometheus-k8s",
         application_name=prometheus_app_name,
-        channel="latest/stable",
+        channel="1.0/stable",
+        revision=129,
+        series="focal",
         trust=True,
     )
     await model.wait_for_idle(raise_on_blocked=True)
@@ -223,7 +225,12 @@ async def deploy_cos_fixture(
 ):
     """Deploy the cos applications."""
     cos_apps = await model.deploy(
-        "grafana-k8s", application_name=grafana_app_name, channel="latest/stable", trust=True
+        "grafana-k8s",
+        application_name=grafana_app_name,
+        channel="1.0/stable",
+        revision=82,
+        series="focal",
+        trust=True,
     )
     await model.wait_for_idle(status="active")
     return cos_apps

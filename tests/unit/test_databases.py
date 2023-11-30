@@ -6,9 +6,7 @@
 import unittest.mock
 
 import pytest
-
-from constants import FLASK_DATABASE_NAME
-from databases import get_uris
+from xiilib.databases import get_uris
 
 DATABASE_URL_TEST_PARAMS = [
     (
@@ -96,7 +94,7 @@ def test_database_uri_mocked(
         database_require.fetch_relation_data = unittest.mock.MagicMock(
             return_value={"data": relation["data"]}
         )
-        database_require.database = relation["data"].get("database", FLASK_DATABASE_NAME)
+        database_require.database = relation["data"].get("database", "flask-app")
         _databases[interface] = database_require
 
     assert get_uris(_databases) == expected_output
