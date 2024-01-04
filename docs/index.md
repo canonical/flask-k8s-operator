@@ -35,3 +35,10 @@ fixes and constructive feedback.
 
 Thinking about using the Flask Operator for your next project?
 [Get in touch](https://chat.charmhub.io/charmhub/channels/charm-dev)!
+
+# Contents
+
+1. [Tutorials](tutorials)
+  1. [Getting Started](tutorials/getting-started.md)
+1. [How-to](how-to)
+  1. [Contribute](how-to/contribute.md)
