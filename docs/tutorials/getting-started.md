@@ -36,8 +36,8 @@ container image for use with the flask-k8s charm must meet the following
 requirements:
 
 - It should have gunicorn installed as a global Python package
-- The Flask application should be situated in the `/flask/app` directory
-- The Flask WSGI application should be located at `/flask/app/app.py`, with
+- The Flask application should be situated in the `/srv/flask/app` directory
+- The Flask WSGI application should be located at `/srv/flask/app/app.py`, with
   the variable name `app`
 - The Flask application must invoke `app.config.from_prefixed_env()` to receive
   configuration
